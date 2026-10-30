@@ -40,7 +40,7 @@ export default function RetardsScreen() {
     switch (statut) {
       case 'EN_ATTENTE_DECISION_RH':
         return {
-          label: 'En attente décision RH',
+          label: 'Décision RH',
           statutClass: 'border-rose-200 bg-rose-50 text-rose-700',
           dotClass: 'bg-rose-500',
           severity: 'Bloqué J+1',

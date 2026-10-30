@@ -204,10 +204,11 @@ export default function PeriodesScreen() {
 
   const statutLabel = (s: string, p?: PeriodeEvaluation) => {
     switch (s) {
-      case 'EN_ATTENTE_DECISION_RH': return 'EN ATTENTE DÉCISION RH';
+      case 'EN_ATTENTE_DECISION_RH': return 'Décision RH';
       case 'EN_COURS': return 'En cours';
       case 'EN_RELANCE': return 'En relance';
-      case 'EN_RETARD': return 'En retard';
+      case 'EN_RETARD':
+      case 'EN_RETARD_CRITIQUE': return 'En retard';
       case 'RENOUVELEE': return 'Renouvellement';
       case 'CONFIRMEE': return 'Validation / Titularisation';
       case 'COMPLETEE':
@@ -225,7 +226,8 @@ export default function PeriodesScreen() {
   const getStatutBadgeVariant = (s: string, p?: PeriodeEvaluation): 'destructive' | 'appleGreen' | 'secondary' | 'appleOrange' => {
     switch (s) {
       case 'EN_ATTENTE_DECISION_RH': return 'destructive';
-      case 'EN_RETARD': return 'destructive';
+      case 'EN_RETARD':
+      case 'EN_RETARD_CRITIQUE': return 'destructive';
       case 'RUPTURE': return 'destructive';
       case 'RENOUVELEE': return 'appleOrange';
       case 'CONFIRMEE': return 'appleGreen';
@@ -355,6 +357,7 @@ export default function PeriodesScreen() {
             <option value="EN_COURS">En cours (J-21)</option>
             <option value="EN_RELANCE">En relance (J-14)</option>
             <option value="EN_RETARD">En retard (J-7)</option>
+            <option value="EN_ATTENTE_DECISION_RH">Décision RH (échéance dépassée)</option>
           </select>
         </div>
       </Card>
@@ -461,7 +464,7 @@ export default function PeriodesScreen() {
                     <td className="py-3.5 px-3 align-middle whitespace-nowrap overflow-hidden">
                       <Badge
                         variant={getStatutBadgeVariant(p.statut, p) as any}
-                        className={`inline-flex items-center gap-1 text-[10px] font-mono whitespace-nowrap ${
+                        className={`inline-flex items-center gap-1 text-[11px] font-semibold whitespace-nowrap ${
                           p.statut === 'EN_RELANCE'
                             ? 'bg-amber-100 text-amber-800 border-amber-200'
                             : p.statut === 'RUPTURE'

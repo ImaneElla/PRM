@@ -53,6 +53,24 @@ public class PeriodeController {
                 .collect(Collectors.toList()));
     }
 
+    /*
+     * Statut affiché d'une période ouverte, selon les jours restants avant l'échéance (indépendant de la tâche automatique) :
+     *   plus de 14 jours : En cours · de 14 à 8 jours : En relance · de 7 jours à l'échéance : En retard
+     *   échéance dépassée (1 jour ou plus) : en attente de décision RH.
+     * Une période close, décidée ou d'un salarié archivé garde son statut enregistré.
+     */
+    private String statutAffiche(PeriodeEvaluation p) {
+        if (p.getDateEcheance() == null || STATUTS_CLOTURES.contains(p.getStatut())
+                || p.getDecisionFinale() != null || !p.getSalarie().isActif()) {
+            return p.getStatut().name();
+        }
+        long joursRestants = ChronoUnit.DAYS.between(LocalDate.now(), p.getDateEcheance());
+        if (joursRestants < 0) return StatutPeriode.EN_ATTENTE_DECISION_RH.name();
+        if (joursRestants > 14) return StatutPeriode.EN_COURS.name();
+        if (joursRestants > 7) return StatutPeriode.EN_RELANCE.name();
+        return StatutPeriode.EN_RETARD_CRITIQUE.name();
+    }
+
     // Retard visible immédiatement : une période ouverte dont l'échéance est dépassée est affichée en retard,
     // sans attendre le prochain passage de la détection (toutes les 5 minutes)
     private boolean enRetardNonConstate(PeriodeEvaluation p) {
@@ -84,7 +102,7 @@ public class PeriodeController {
                 .dateDernierRappel(p.getDateDernierRappel())
                 .dateValidationEvaluateur(p.getDateValidationEvaluateur())
                 .dateValidationRH(p.getDateValidationRh())
-                .statut(enRetardNonConstate(p) ? StatutPeriode.EN_ATTENTE_DECISION_RH.name() : p.getStatut().name())
+                .statut(statutAffiche(p))
                 .decision(STATUTS_CLOTURES.contains(p.getStatut()) ? decisionPeriode(p) : null)
                 .joursRetard(enRetardNonConstate(p)
                         ? Integer.valueOf((int) ChronoUnit.DAYS.between(p.getDateEcheance(), LocalDate.now()))

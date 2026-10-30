@@ -252,6 +252,24 @@ class FluxCompletTest {
     }
 
     @Test
+    void leStatutAfficheSuitLesJoursRestantsAvantLEcheance() throws Exception {
+        String admin = jeton(creerCompte("admin", UserRole.ADMIN_RH, null));
+        // jours restants -> statut affiché : En cours (>14), En relance (8-14), En retard (0-7), Décision RH (échéance dépassée)
+        Object[][] cas = {{30, "EN_COURS"}, {15, "EN_COURS"}, {14, "EN_RELANCE"}, {8, "EN_RELANCE"},
+                {7, "EN_RETARD_CRITIQUE"}, {0, "EN_RETARD_CRITIQUE"}, {-1, "EN_ATTENTE_DECISION_RH"}};
+        for (Object[] c : cas) {
+            PeriodeEvaluation p = recharger(p1);
+            p.setDateEcheance(LocalDate.now().plusDays((Integer) c[0]));
+            p.setStatut(StatutPeriode.PLANIFIEE);
+            periodeRepository.save(p);
+
+            mockMvc.perform(get("/api/periodes").header("Authorization", admin))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$[?(@.id == " + p.getId() + ")].statut").value(c[1]));
+        }
+    }
+
+    @Test
     void uneEvaluationDejaRenduePasseNEstJamaisEnRetard() {
         evaluationService.soumettreEvaluation(p1.getId(), evaluation(RecommandationEvaluateur.PROLONGATION_ESSAI));
         PeriodeEvaluation p = recharger(p1);

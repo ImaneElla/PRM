@@ -645,7 +645,7 @@ export default function DetailSalarieScreen() {
                       : p.statut === 'EN_RELANCE'
                       ? 'En relance'
                       : p.statut === 'EN_ATTENTE_DECISION_RH'
-                      ? 'En attente décision RH'
+                      ? 'Décision RH'
                       : estRetard(p.statut)
                       ? 'En retard'
                       : p.statut === 'RUPTURE'
