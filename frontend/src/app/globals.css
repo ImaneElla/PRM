@@ -1,0 +1,497 @@
+@import "tailwindcss";
+
+:root {
+  /* Apple / macOS 2026 Liquid Glass — Red & Black Light Mode */
+  --background: #F5F5F7;
+  --foreground: #1D1D1F;
+
+  --card: #FFFFFF;
+  --card-foreground: #1D1D1F;
+
+  --popover: rgba(255, 255, 255, 0.90);
+  --popover-foreground: #1D1D1F;
+
+  --primary: #E4002B;
+  --primary-foreground: #FFFFFF;
+
+  --secondary: #F5F5F7;
+  --secondary-foreground: #1D1D1F;
+
+  --muted: #F5F5F7;
+  --muted-foreground: #6E6E73;
+
+  --accent: #F5F5F7;
+  --accent-foreground: #1D1D1F;
+
+  --destructive: #E4002B;
+  --destructive-foreground: #FFFFFF;
+
+  --border: #E8E8ED;
+  --input: #F5F5F7;
+  --ring: #1D1D1F;
+
+  --radius: 1.25rem;
+
+  --apple-blue: #007AFF;
+  --apple-blue-subtle: #F0F4FF;
+  --apple-green: #34C759;
+  --apple-green-subtle: #F0FDF4;
+  --apple-orange: #FF9500;
+  --apple-orange-subtle: #FFF8EB;
+  --apple-red: #E4002B;
+  --apple-red-subtle: #FFF0F3;
+  --apple-purple: #AF52DE;
+  --apple-purple-subtle: #FAF5FF;
+
+  --shadow-apple-sm: 0 4px 24px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.04);
+  --shadow-apple-md: 0 8px 32px rgba(0, 0, 0, 0.08);
+}
+
+.dark {
+  --background: #000000;
+  --foreground: #ffffff;
+
+  --card: #1c1c1e;
+  --card-foreground: #ffffff;
+
+  --popover: rgba(28, 28, 30, 0.88);
+  --popover-foreground: #ffffff;
+
+  --primary: #ff453a;
+  --primary-foreground: #ffffff;
+
+  --secondary: #2c2c2e;
+  --secondary-foreground: #f2f2f7;
+
+  --muted: #2c2c2e;
+  --muted-foreground: #8e8e93;
+
+  --accent: #2c2c2e;
+  --accent-foreground: #ffffff;
+
+  --destructive: #ff453a;
+  --destructive-foreground: #ffffff;
+
+  --border: rgba(255, 255, 255, 0.12);
+  --input: rgba(255, 255, 255, 0.15);
+  --ring: #ff453a;
+
+  --apple-blue: #0a84ff;
+  --apple-blue-subtle: rgba(10, 132, 255, 0.16);
+  --apple-green: #30d158;
+  --apple-green-subtle: rgba(48, 209, 88, 0.16);
+  --apple-orange: #ff9f0a;
+  --apple-orange-subtle: rgba(255, 159, 10, 0.16);
+  --apple-red: #ff453a;
+  --apple-red-subtle: rgba(255, 69, 58, 0.16);
+  --apple-purple: #bf5af2;
+  --apple-purple-subtle: rgba(191, 90, 242, 0.16);
+
+  --shadow-apple-sm: 0 2px 10px rgba(0, 0, 0, 0.5);
+  --shadow-apple-md: 0 10px 30px rgba(0, 0, 0, 0.7);
+}
+
+.dark .bg-white {
+  background-color: var(--card) !important;
+}
+
+.dark .text-zinc-950,
+.dark .text-zinc-900,
+.dark .text-zinc-800 {
+  color: var(--foreground) !important;
+}
+
+.dark .text-zinc-700,
+.dark .text-zinc-600 {
+  color: var(--muted-foreground) !important;
+}
+
+.dark .border-zinc-200,
+.dark .border-zinc-300,
+.dark .border-zinc-100 {
+  border-color: var(--border) !important;
+}
+
+.dark .bg-zinc-50,
+.dark .bg-zinc-100 {
+  background-color: var(--secondary) !important;
+}
+
+.dark .bg-red-50 {
+  background-color: rgba(255, 69, 58, 0.12) !important;
+}
+
+.dark .text-red-600 {
+  color: #ff453a !important;
+}
+
+.dark .border-red-100,
+.dark .border-red-200 {
+  border-color: rgba(255, 69, 58, 0.25) !important;
+}
+
+@theme {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  --color-apple-blue: var(--apple-blue);
+  --color-apple-blue-subtle: var(--apple-blue-subtle);
+  --color-apple-green: var(--apple-green);
+  --color-apple-green-subtle: var(--apple-green-subtle);
+  --color-apple-orange: var(--apple-orange);
+  --color-apple-orange-subtle: var(--apple-orange-subtle);
+  --color-apple-red: var(--apple-red);
+  --color-apple-red-subtle: var(--apple-red-subtle);
+  --color-apple-purple: var(--apple-purple);
+  --color-apple-purple-subtle: var(--apple-purple-subtle);
+
+  --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Display", var(--font-inter), "Inter", "Segoe UI", sans-serif;
+  --font-apple: -apple-system, BlinkMacSystemFont, "SF Pro Display", var(--font-inter), "Inter", "Segoe UI", sans-serif;
+  --font-mono: "SF Mono", SFMono-Regular, ui-monospace, Menlo, Monaco, Consolas, monospace;
+
+  --radius-xl: var(--radius);
+  --radius-lg: calc(var(--radius) - 2px);
+  --radius-md: calc(var(--radius) - 4px);
+  --radius-sm: calc(var(--radius) - 6px);
+}
+
+html {
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", var(--font-inter), "Inter", "Segoe UI", sans-serif;
+  font-feature-settings: "cv11", "ss01";
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+@media (min-width: 1180px) {
+  body {
+    zoom: 0.8;
+    width: calc(100vw / 0.8);
+    min-height: calc(100vh / 0.8);
+  }
+  .w-screen {
+    width: calc(100vw / 0.8);
+  }
+  .h-screen {
+    height: calc(100vh / 0.8);
+  }
+  .min-h-screen {
+    min-height: calc(100vh / 0.8);
+  }
+}
+
+@page {
+  size: A4;
+  margin: 10mm;
+}
+
+body {
+  background-color: var(--background);
+  color: var(--foreground);
+  transition: background-color 200ms cubic-bezier(0.25, 0.1, 0.25, 1);
+}
+
+/* Barres de défilement fines et discrètes, comme sur macOS / iOS */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0, 0, 0, 0.18) transparent;
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.18);
+  border-radius: 999px;
+  border: 3px solid transparent;
+  background-clip: content-box;
+  transition: background-color 200ms;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.32);
+  background-clip: content-box;
+}
+
+.dark * {
+  scrollbar-color: rgba(255, 255, 255, 0.22) transparent;
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.22);
+  background-clip: content-box;
+}
+
+/* Smooth scrolling */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Sélection et focus clavier : un seul accent, net mais léger */
+::selection {
+  background: rgba(228, 0, 43, 0.14);
+}
+
+button:focus-visible,
+a:focus-visible,
+select:focus-visible,
+[role="button"]:focus-visible {
+  outline: 2px solid rgba(228, 0, 43, 0.55);
+  outline-offset: 2px;
+}
+
+/* Typographie : titres resserrés, chiffres alignés (tableaux et KPI) */
+h1, h2, h3 {
+  letter-spacing: -0.02em;
+  text-wrap: balance;
+}
+
+table,
+.tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Mouvement : courbe "ressort" douce, utilisée partout */
+:root {
+  --ease-spring: cubic-bezier(0.32, 0.72, 0, 1);
+  --ease-standard: cubic-bezier(0.25, 0.1, 0.25, 1);
+}
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes screen-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: none; }
+}
+
+@keyframes sheet-in {
+  from { opacity: 0; transform: translateY(14px) scale(0.965); }
+  to { opacity: 1; transform: none; }
+}
+
+/* Changement d'écran.
+   Pas de fill-mode "forwards"/"both" : une animation de transform conservée après sa fin fait de ce conteneur le repère
+   des éléments en position: fixed, et les fenêtres modales (fond sombre) ne couvriraient plus que la zone de contenu. */
+.screen-enter {
+  animation: screen-in 380ms var(--ease-spring) backwards;
+}
+
+/* Fond des fenêtres modales (classes déjà posées sur les overlays) */
+.animate-in {
+  animation: fade-in 220ms var(--ease-standard) both;
+}
+
+/* Feuille de la modale : apparition en ressort, comme une sheet iOS */
+.fixed.inset-0.z-50 > div:first-child {
+  animation: sheet-in 360ms var(--ease-spring) both;
+}
+
+/* Les overlays pleine page (menus, fonds) ne doivent pas s'animer comme une sheet */
+.fixed.inset-0.z-50:not([class*="bg-"]) > div:first-child,
+.fixed.inset-0.z-50.items-stretch > div:first-child {
+  animation: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+
+@layer components {
+  /* Liquid Glass surface */
+  .apple-glass {
+    background: rgba(255, 255, 255, 0.80);
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    border: 1px solid #E8E8ED;
+    border-radius: 20px;
+  }
+
+  .apple-page-title {
+    @apply text-[1.75rem] font-semibold tracking-tight text-foreground leading-tight;
+  }
+
+  .apple-page-subtitle {
+    @apply text-sm text-muted-foreground mt-1 font-normal leading-snug;
+  }
+
+  .apple-section-label {
+    @apply text-[11px] font-semibold uppercase tracking-[0.06em] text-muted-foreground;
+  }
+
+  .apple-nav-item {
+    @apply w-full flex items-center rounded-[10px] text-[13px] font-medium text-muted-foreground border border-transparent;
+    transition: all 200ms cubic-bezier(0.25, 0.1, 0.25, 1);
+  }
+
+  .apple-nav-item-active {
+    @apply bg-black/[0.06] text-foreground font-semibold;
+  }
+
+  /* Liquid Glass metric card */
+  .apple-metric-card {
+    background: #FFFFFF;
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    border: 1px solid #E8E8ED;
+    border-radius: 20px;
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.04);
+    transition: all 200ms cubic-bezier(0.25, 0.1, 0.25, 1);
+  }
+
+  .apple-metric-card:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+  }
+
+  /* Bouton principal : un seul rouge, léger reflet haut et ombre colorée discrète */
+  .btn-gradient,
+  .btn-gardient {
+    background: linear-gradient(to bottom, #EE1B3C, #D1002A);
+    color: #FFFFFF;
+    border: 1px solid #D1002A;
+    border-radius: 12px;
+    padding: 10px 18px;
+    font-weight: 500;
+    font-size: 14px;
+    box-shadow:
+      0 1px 2px rgba(209, 0, 42, 0.3),
+      0 6px 16px -6px rgba(209, 0, 42, 0.5),
+      inset 0 1px 0 rgba(255, 255, 255, 0.2);
+    transition:
+      transform 260ms var(--ease-spring),
+      box-shadow 260ms var(--ease-spring),
+      filter 200ms var(--ease-standard);
+    cursor: pointer;
+  }
+
+  .btn-gradient:hover,
+  .btn-gardient:hover {
+    filter: brightness(1.05);
+    transform: translateY(-1px);
+    box-shadow:
+      0 1px 2px rgba(209, 0, 42, 0.3),
+      0 10px 22px -6px rgba(209, 0, 42, 0.55),
+      inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  }
+
+  .btn-gradient:active,
+  .btn-gardient:active {
+    transform: scale(0.98);
+  }
+
+  .btn-gardient::before {
+    content: none;
+  }
+
+  .btn-gradient::before {
+    content: none;
+  }
+}
+
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 10mm;
+  }
+
+  html,
+  body {
+    height: auto !important;
+    overflow: visible !important;
+    background: white !important;
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+
+  .app-shell,
+  .app-shell > * {
+    height: auto !important;
+    min-height: 0 !important;
+    overflow: visible !important;
+  }
+
+  .app-shell {
+    display: block !important;
+    width: 100% !important;
+  }
+
+  .app-main {
+    overflow: visible !important;
+    height: auto !important;
+    padding: 0 !important;
+    background: white !important;
+  }
+
+  .app-main-inner {
+    max-width: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  .print-document {
+    width: 100% !important;
+    max-width: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    box-shadow: none !important;
+    border: none !important;
+    overflow: visible !important;
+    break-inside: auto;
+  }
+
+  .print-document .bg-\[\#A30000\] {
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+
+  .print-document table {
+    break-inside: auto;
+  }
+
+  .print-document tr {
+    break-inside: avoid;
+    break-after: auto;
+  }
+
+  .print-document thead {
+    display: table-header-group;
+  }
+
+  .print-document .overflow-x-auto {
+    overflow: visible !important;
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "dependencies": {
+    "recharts": "^3.10.1",
+    "swagger-jsdoc": "^6.3.0",
+    "swagger-ui-react": "^5.33.1"
+  },
+  "devDependencies": {
+    "@types/swagger-jsdoc": "^6.0.4",
+    "@types/swagger-ui-react": "^5.18.0"
+  }
+}

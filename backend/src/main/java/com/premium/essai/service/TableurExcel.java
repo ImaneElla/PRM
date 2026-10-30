@@ -1,0 +1,172 @@
+package com.premium.essai.service;
+
+import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.CellStyle;
+import org.apache.poi.ss.usermodel.CellType;
+import org.apache.poi.ss.usermodel.CreationHelper;
+import org.apache.poi.ss.usermodel.DataFormatter;
+import org.apache.poi.ss.usermodel.DateUtil;
+import org.apache.poi.ss.usermodel.Font;
+import org.apache.poi.ss.usermodel.FormulaEvaluator;
+import org.apache.poi.ss.usermodel.IndexedColors;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.ss.usermodel.WorkbookFactory;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.server.ResponseStatusException;
+
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.util.List;
+import java.util.Locale;
+
+public final class TableurExcel {
+
+    public static final String TYPE_XLSX = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+
+    private TableurExcel() {
+    }
+
+    /* Texte analysable par l'import : Excel (.xlsx / .xls) converti, sinon CSV (UTF-8 ou Windows-1252). */
+    public static String enTexte(byte[] octets, String nomFichier) {
+        if (!estExcel(octets, nomFichier)) {
+            return CsvEncodage.decoder(octets);
+        }
+        try (Workbook classeur = WorkbookFactory.create(new ByteArrayInputStream(octets))) {
+            if (classeur.getNumberOfSheets() == 0) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Le fichier Excel ne contient aucune feuille.");
+            }
+            return convertir(classeur.getSheetAt(0), classeur.getCreationHelper().createFormulaEvaluator());
+        } catch (ResponseStatusException e) {
+            throw e;
+        } catch (LinkageError e) {
+            // Bibliothèque Excel non chargée (ex. serveur démarré avant une mise à jour, ou fichiers recompilés en cours d'exécution)
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR,
+                    "Lecture Excel indisponible sur le serveur : redémarrez-le puis réessayez.");
+        } catch (IOException | RuntimeException e) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Fichier Excel illisible : utilisez un fichier .xlsx non protégé par mot de passe.");
+        }
+    }
+
+    private static boolean estExcel(byte[] octets, String nomFichier) {
+        String nom = nomFichier == null ? "" : nomFichier.toLowerCase(Locale.ROOT);
+        boolean zip = octets.length > 3 && octets[0] == 0x50 && octets[1] == 0x4B;                       // .xlsx
+        boolean ole = octets.length > 3 && (octets[0] & 0xFF) == 0xD0 && (octets[1] & 0xFF) == 0xCF;     // .xls
+        return nom.endsWith(".xlsx") || nom.endsWith(".xls") || zip || ole;
+    }
+
+    private static String convertir(Sheet feuille, FormulaEvaluator evaluateur) {
+        DataFormatter formateur = new DataFormatter(Locale.FRANCE);
+        int dernier = feuille.getLastRowNum();
+        StringBuilder texte = new StringBuilder();
+        // Une ligne de texte par ligne Excel (les lignes vides restent vides) : les numéros d'erreur correspondent à Excel
+        for (int i = 0; i <= dernier; i++) {
+            Row ligne = feuille.getRow(i);
+            if (ligne != null) {
+                int colonnes = Math.max(ligne.getLastCellNum(), 0);
+                StringBuilder valeurs = new StringBuilder();
+                boolean toutVide = true;
+                for (int c = 0; c < colonnes; c++) {
+                    String valeur = valeurCellule(ligne.getCell(c), formateur, evaluateur);
+                    if (!valeur.isEmpty()) toutVide = false;
+                    if (c > 0) valeurs.append(';');
+                    valeurs.append(valeur);
+                }
+                if (!toutVide) texte.append(valeurs);
+            }
+            texte.append('\n');
+        }
+        return texte.toString();
+    }
+
+    private static String valeurCellule(Cell cellule, DataFormatter formateur, FormulaEvaluator evaluateur) {
+        if (cellule == null) return "";
+        CellType type = cellule.getCellType() == CellType.FORMULA ? cellule.getCachedFormulaResultType() : cellule.getCellType();
+        String valeur;
+        if (type == CellType.NUMERIC && DateUtil.isCellDateFormatted(cellule)) {
+            // Date Excel -> AAAA-MM-JJ, quel que soit l'affichage choisi dans Excel
+            valeur = cellule.getLocalDateTimeCellValue().toLocalDate().toString();
+        } else {
+            valeur = formateur.formatCellValue(cellule, evaluateur);
+        }
+        // Le séparateur et les retours à la ligne ne doivent pas casser la ligne
+        return valeur.replace(';', ',').replace('\r', ' ').replace('\n', ' ').trim();
+    }
+
+
+    public static byte[] modeleSalaries() {
+        return modele("Salariés",
+                List.of("nom", "prénom", "email", "poste", "date d'embauche", "société", "téléphone", "responsable (e-mail)"),
+                List.of("Alaoui", "Sara", "sara.alaoui@exemple.com", "Comptable", "2026-10-01", "GRP", "0600000000", ""),
+                new int[]{18, 16, 32, 20, 18, 10, 16, 30},
+                4);
+    }
+
+    public static byte[] modeleResponsables() {
+        return modele("Responsables",
+                List.of("nom", "prénom", "email", "société"),
+                List.of("Dupont", "Marie", "marie.dupont@exemple.com", "GRP"),
+                new int[]{18, 16, 32, 10},
+                -1);
+    }
+
+    private static byte[] modele(String nomFeuille, List<String> entetes, List<String> exemple, int[] largeurs, int colonneDate) {
+        try (XSSFWorkbook classeur = new XSSFWorkbook(); ByteArrayOutputStream sortie = new ByteArrayOutputStream()) {
+            Sheet feuille = classeur.createSheet(nomFeuille);
+            CreationHelper aide = classeur.getCreationHelper();
+
+            Font gras = classeur.createFont();
+            gras.setBold(true);
+            CellStyle styleEntete = classeur.createCellStyle();
+            styleEntete.setFont(gras);
+            styleEntete.setFillForegroundColor(IndexedColors.GREY_25_PERCENT.getIndex());
+            styleEntete.setFillPattern(org.apache.poi.ss.usermodel.FillPatternType.SOLID_FOREGROUND);
+
+            CellStyle styleTexte = classeur.createCellStyle();
+            styleTexte.setDataFormat(aide.createDataFormat().getFormat("@")); // texte : garde le 0 de « 06… »
+
+            Row ligneEntete = feuille.createRow(0);
+            Row ligneExemple = feuille.createRow(1);
+            for (int c = 0; c < entetes.size(); c++) {
+                Cell entete = ligneEntete.createCell(c);
+                entete.setCellValue(entetes.get(c));
+                entete.setCellStyle(styleEntete);
+                Cell valeur = ligneExemple.createCell(c);
+                valeur.setCellStyle(styleTexte);
+                valeur.setCellValue(exemple.get(c));
+                feuille.setColumnWidth(c, largeurs[c] * 256);
+            }
+            feuille.createFreezePane(0, 1);
+
+            Sheet aideFeuille = classeur.createSheet("Mode d'emploi");
+            String[] lignes = colonneDate >= 0
+                    ? new String[]{
+                        "Remplissez la feuille « Salariés », une ligne par salarié, puis importez le fichier dans l'application.",
+                        "Remplacez ou supprimez la ligne d'exemple (ligne 2).",
+                        "Colonnes obligatoires : nom, prénom, email, poste, date d'embauche.",
+                        "Facultatives : société (GRP, PRO, SRM, AFI, CCI ou SCP ; GRP par défaut), téléphone, responsable (son e-mail).",
+                        "Date d'embauche : une vraie date Excel, ou au format AAAA-MM-JJ / JJ/MM/AAAA.",
+                        "Téléphone : formatez la colonne en « Texte » pour conserver le 0 initial.",
+                        "Maximum 500 lignes par fichier ; une ligne en erreur n'empêche pas l'import des autres."}
+                    : new String[]{
+                        "Remplissez la feuille « Responsables », une ligne par responsable, puis importez le fichier.",
+                        "Remplacez ou supprimez la ligne d'exemple (ligne 2).",
+                        "Colonnes obligatoires : nom, prénom, email. Facultative : société (GRP par défaut).",
+                        "Chaque responsable reçoit une invitation par e-mail pour activer son compte.",
+                        "Maximum 500 lignes par fichier."};
+            for (int i = 0; i < lignes.length; i++) {
+                aideFeuille.createRow(i).createCell(0).setCellValue(lignes[i]);
+            }
+            aideFeuille.setColumnWidth(0, 110 * 256);
+
+            classeur.write(sortie);
+            return sortie.toByteArray();
+        } catch (IOException e) {
+            throw new IllegalStateException("Impossible de générer le modèle Excel", e);
+        }
+    }
+}

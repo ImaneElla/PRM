@@ -1,0 +1,13 @@
+node_modules/
+**/node_modules/
+.next/
+**/.next/
+target/
+**/target/
+dist/
+
+# Secrets et fichiers locaux
+.env
+.env.*
+!.env.example
+*.log

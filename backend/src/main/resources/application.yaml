@@ -1,0 +1,49 @@
+spring:
+  application:
+    name: premium-essai-manager
+  datasource:
+    url: jdbc:postgresql://localhost:5432/premium_essai_db
+    username: postgres
+    password: postgres
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: none
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+  flyway:
+    baseline-on-migrate: true
+    baseline-version: 0
+    enabled: false
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: ${MAIL_USERNAME:}
+    password: ${MAIL_PASSWORD:}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+
+application:
+  frontend-url: ${FRONTEND_URL:http://localhost:3000}
+  # Expéditeur des e-mails si aucun n'est configuré dans les paramètres : MAIL_SENDER, sinon le compte SMTP
+  mail-sender: ${MAIL_SENDER:${MAIL_USERNAME:}}
+  security:
+    jwt:
+      # Obligatoire en production (32 caractères minimum). Sans valeur, un secret aléatoire est généré à chaque démarrage.
+      secret-key: ${JWT_SECRET:}
+      expiration-hours: ${JWT_EXPIRATION_HOURS:12}
+
+server:
+  port: 8080
+
+logging:
+  level:
+    com.premium.essai: DEBUG
+    org.hibernate.SQL: DEBUG
