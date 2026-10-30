@@ -17,6 +17,7 @@ import com.premium.essai.repository.SalarieRepository;
 import com.premium.essai.repository.HistoriqueEmailRepository;
 import com.premium.essai.repository.NotificationRepository;
 import com.premium.essai.service.SalarieService;
+import com.premium.essai.service.NotificationEcheanceService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -46,6 +47,7 @@ public class SalarieServiceImpl implements SalarieService {
     private final EvaluationDetailRepository evaluationDetailRepository;
     private final NotificationRepository notificationRepository;
 
+    private final NotificationEcheanceService notificationEcheanceService;
     @Override
     @Transactional
     public SalarieResponseDTO createSalarie(SalarieRequestDTO dto) {
@@ -110,6 +112,10 @@ public class SalarieServiceImpl implements SalarieService {
 
         PeriodeEvaluation savedPeriode = periodeRepository.save(p1);
 
+
+        // Un salarié embauché il y a longtemps (import d'historique) peut avoir une échéance déjà dépassée : retard constaté tout de suite,
+        // sans e-mail au responsable (constat silencieux)
+        notificationEcheanceService.detecterRetardsDuSalarie(savedSalarie.getId(), false);
         return mapToResponseDTO(savedSalarie, savedPeriode.getId());
     }
 

@@ -61,7 +61,7 @@ export default function Sidebar() {
   const [isSystemOpen, setIsSystemOpen] = useState(true);
 
   const isRH = currentRole === 'ADMIN_RH';
-  const retardsCount = periodes.filter(p => p.statut === 'EN_RETARD').length;
+  const retardsCount = periodes.filter(p => p.statut === 'EN_RETARD' || p.statut === 'EN_ATTENTE_DECISION_RH').length;
   const unreadNotifsCount = notifications.filter(n => !n.estLue).length;
   const enCoursCount = salaries.filter(s => s.statutEssai === 'EN_COURS' || s.statutEssai === 'RENOUVELEE').length;
   const emailsCount = emails.length;

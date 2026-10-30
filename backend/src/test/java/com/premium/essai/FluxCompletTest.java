@@ -196,6 +196,72 @@ class FluxCompletTest {
         verify(mailService, times(1)).sendAlerteRetard(any(), org.mockito.ArgumentMatchers.anyInt());
     }
 
+    // ---------- Détection immédiate du retard ----------
+
+    @Test
+    void unSalarieEmbaucheIlYALongtempsEstImmediatementEnRetardSansEmail() {
+        // Historique : embauché il y a 8 mois, la période de 3 mois est échue depuis ~5 mois
+        SalarieResponseDTO ancien = salarieService.createSalarie(SalarieRequestDTO.builder()
+                .firstName("Ancien").lastName("Salarie").email("ancien-" + UUID.randomUUID() + "@example.com")
+                .poste("Dev").dateEmbauche(LocalDate.now().minusMonths(8))
+                .directionId(direction.getId()).responsableId(responsable.getId()).build());
+
+        PeriodeEvaluation periode = periodeRepository.findBySalarieId(ancien.getId()).get(0);
+        assertEquals(StatutPeriode.EN_ATTENTE_DECISION_RH, periode.getStatut());
+        assertTrue(periode.getJoursRetard() > 100, "jours de retard : " + periode.getJoursRetard());
+        assertTrue(salarieRepository.findById(ancien.getId()).orElseThrow().isBloqueEmails());
+        // Constat silencieux : aucun e-mail d'alerte envoyé au responsable pour un import d'historique
+        verify(mailService, never()).sendAlerteRetard(any(), org.mockito.ArgumentMatchers.anyInt());
+    }
+
+    @Test
+    void laDetectionPeriodiqueSignaleLeRetardEtEnvoieUneSeuleAlerte() {
+        PeriodeEvaluation p = recharger(p1);
+        p.setDateEcheance(LocalDate.now().minusDays(1));
+        periodeRepository.save(p);
+
+        // Même un dimanche ou un jour férié : le retard est constaté (pas de dépendance aux jours ouvrables)
+        int nouveaux = cron.detecterRetards(LocalDate.now(), true);
+
+        assertEquals(1, nouveaux);
+        PeriodeEvaluation constate = recharger(p1);
+        assertEquals(StatutPeriode.EN_ATTENTE_DECISION_RH, constate.getStatut());
+        assertEquals(1, constate.getJoursRetard());
+        verify(mailService, times(1)).sendAlerteRetard(any(), org.mockito.ArgumentMatchers.anyInt());
+
+        // Un second passage ne renvoie rien et met à jour les jours de retard
+        assertEquals(0, cron.detecterRetards(LocalDate.now().plusDays(2), true));
+        assertEquals(3, recharger(p1).getJoursRetard());
+        verify(mailService, times(1)).sendAlerteRetard(any(), org.mockito.ArgumentMatchers.anyInt());
+    }
+
+    @Test
+    void laListeDesPeriodesMontreLeRetardSansAttendreLaDetection() throws Exception {
+        PeriodeEvaluation p = recharger(p1);
+        p.setDateEcheance(LocalDate.now().minusDays(4)); // échue, pas encore constatée en base
+        periodeRepository.save(p);
+        String admin = jeton(creerCompte("admin", UserRole.ADMIN_RH, null));
+
+        mockMvc.perform(get("/api/periodes").header("Authorization", admin))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[?(@.id == " + p.getId() + ")].statut").value("EN_ATTENTE_DECISION_RH"))
+                .andExpect(jsonPath("$[?(@.id == " + p.getId() + ")].joursRetard").value(4));
+        mockMvc.perform(get("/api/dashboard/stats").header("Authorization", admin))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalEvaluationsEnRetardCritique").value(1));
+    }
+
+    @Test
+    void uneEvaluationDejaRenduePasseNEstJamaisEnRetard() {
+        evaluationService.soumettreEvaluation(p1.getId(), evaluation(RecommandationEvaluateur.PROLONGATION_ESSAI));
+        PeriodeEvaluation p = recharger(p1);
+        p.setDateEcheance(LocalDate.now().minusDays(10));
+        periodeRepository.save(p);
+
+        assertEquals(0, cron.detecterRetards(LocalDate.now(), true));
+        assertEquals(StatutPeriode.COMPLETEE, recharger(p1).getStatut());
+    }
+
     // ---------- Évaluation, décision, archivage, restauration ----------
 
     @Test

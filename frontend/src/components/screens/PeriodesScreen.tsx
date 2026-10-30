@@ -22,7 +22,7 @@ type KpiFilter = 'ALL' | 'ACTIVES' | 'ATTENTE' | 'RETARD';
 // En cours + relance (sans EN_ATTENTE / EMAIL_ENVOYE)
 const ATTENTE_STATUTS = ['EN_COURS', 'EN_RELANCE'];
 // Retard : J-7 uniquement
-const RETARD_STATUTS = ['EN_RETARD'];
+const RETARD_STATUTS = ['EN_RETARD', 'EN_ATTENTE_DECISION_RH'];
 // Formulaire rempli par le responsable
 const FINALISEES_STATUTS = ['COMPLETEE', 'VALIDEE_RH', 'RENOUVELEE', 'CONFIRMEE'];
 // Périodes non actives : complétées, validées RH ou en rupture

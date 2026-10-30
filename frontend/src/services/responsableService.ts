@@ -62,6 +62,18 @@ export const responsableService = {
     }
   },
 
+  // Fiche du responsable connecté (un responsable n'a pas accès à l'annuaire complet)
+  async getMoi(): Promise<ResponsableBackendDTO | null> {
+    try {
+      const response = await fetch(`${API_BASE_URL}/compte/moi`, { headers: authHeaders(), cache: "no-store" });
+      if (!response.ok) return null;
+      return await response.json();
+    } catch (error) {
+      console.warn("Connexion backend /compte/moi indisponible:", error);
+      return null;
+    }
+  },
+
   async createResponsable(payload: Omit<ResponsableBackendDTO, "id">): Promise<ResponsableBackendDTO> {
     const response = await fetch(`${API_BASE_URL}/responsables`, {
       method: "POST",

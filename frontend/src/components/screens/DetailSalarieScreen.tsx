@@ -58,6 +58,9 @@ const DECISION_OPTIONS: {
   },
 ];
 
+// Période en retard : signalée « en retard » ou bloquée en attente de décision RH (échéance dépassée)
+const estRetard = (statut?: string) => statut === 'EN_RETARD' || statut === 'EN_ATTENTE_DECISION_RH';
+
 export default function DetailSalarieScreen() {
   const { 
     selectedSalarieId, 
@@ -407,21 +410,21 @@ export default function DetailSalarieScreen() {
           ) : (
             <div className={`border rounded-xl p-4 ${
               isPeriode3MTitularisee || isPeriodeCloturee(periode3M?.statut) ? 'border-apple-green/30 bg-apple-green-subtle/40' :
-              periode3M?.statut === 'EN_RETARD' ? 'border-destructive/30 bg-destructive/5' :
+              estRetard(periode3M?.statut) ? 'border-destructive/30 bg-destructive/5' :
               'border-[#E8E8ED] bg-white'
             }`}>
               <div className="flex items-center justify-between mb-2">
                 <Badge 
                   variant={
                     isPeriode3MTitularisee || isPeriodeCloturee(periode3M?.statut) ? 'appleGreen' :
-                    periode3M?.statut === 'EN_RETARD' ? 'destructive' :
+                    estRetard(periode3M?.statut) ? 'destructive' :
                     'appleBlue'
                   }
                   className="text-[10px]"
                 >
                   {isPeriode3MTitularisee ? 'Titularisé' :
                    isPeriode3MRenouvelee ? 'Renouvellement' :
-                   periode3M?.statut === 'EN_RETARD' ? `Retard +${periode3M.joursRetard}j` :
+                   estRetard(periode3M?.statut) ? `Retard +${periode3M.joursRetard}j` :
                    isPeriodeCloturee(periode3M?.statut) ? 'Validé' :
                    periode3M ? 'En cours' : 'Planifié'}
                 </Badge>
@@ -435,7 +438,7 @@ export default function DetailSalarieScreen() {
               <p className="text-xs text-muted-foreground font-mono mt-0.5">{periode3M?.dateEcheance || '—'}</p>
               <div className="mt-2 flex items-center justify-between">
                 <span className="text-[11px] text-muted-foreground">Email à 09:00</span>
-                {periode3M?.statut === 'EN_RETARD' && !decisionRupture && (
+                {estRetard(periode3M?.statut) && !decisionRupture && (
                   <Button
                     size="sm"
                     onClick={() => relancerRetard(periode3M.id)}
@@ -462,21 +465,21 @@ export default function DetailSalarieScreen() {
           ) : (
             <div className={`border rounded-xl p-4 ${
               isPeriode6MTitularisee || isPeriodeCloturee(periode6M?.statut) ? 'border-apple-green/30 bg-apple-green-subtle/40' :
-              periode6M?.statut === 'EN_RETARD' ? 'border-destructive/30 bg-destructive/5' :
+              estRetard(periode6M?.statut) ? 'border-destructive/30 bg-destructive/5' :
               'border-[#E8E8ED] bg-white'
             }`}>
               <div className="flex items-center justify-between mb-2">
                 <Badge 
                   variant={
                     isPeriode6MTitularisee || isPeriodeCloturee(periode6M?.statut) ? 'appleGreen' :
-                    periode6M?.statut === 'EN_RETARD' ? 'destructive' :
+                    estRetard(periode6M?.statut) ? 'destructive' :
                     'applePurple'
                   }
                   className="text-[10px]"
                 >
                   {isPeriode6MTitularisee ? 'Titularisé' :
                    isPeriode6MRenouvelee ? 'Renouvellement' :
-                   periode6M?.statut === 'EN_RETARD' ? `Retard +${periode6M.joursRetard}j` :
+                   estRetard(periode6M?.statut) ? `Retard +${periode6M.joursRetard}j` :
                    isPeriodeCloturee(periode6M?.statut) ? 'Validé' :
                    periode6M ? 'En cours' : 'À venir'}
                 </Badge>
@@ -631,7 +634,7 @@ export default function DetailSalarieScreen() {
                   </div>
                   <Badge 
                     variant={
-                      p.statut === 'EN_RETARD' || p.statut === 'RUPTURE' ? 'destructive' :
+                      estRetard(p.statut) || p.statut === 'RUPTURE' ? 'destructive' :
                       p.statut === 'RENOUVELEE' ? 'appleOrange' :
                       isCompleted ? 'appleGreen' : 'secondary'
                     }
@@ -641,7 +644,9 @@ export default function DetailSalarieScreen() {
                       ? 'En cours'
                       : p.statut === 'EN_RELANCE'
                       ? 'En relance'
-                      : p.statut === 'EN_RETARD'
+                      : p.statut === 'EN_ATTENTE_DECISION_RH'
+                      ? 'En attente décision RH'
+                      : estRetard(p.statut)
                       ? 'En retard'
                       : p.statut === 'RUPTURE'
                       ? 'Arrêt de contrat'
@@ -720,7 +725,7 @@ export default function DetailSalarieScreen() {
                     <p className="text-muted-foreground text-xs">
                       Ce bilan n&apos;a pas encore été finalisé par le manager <strong className="text-foreground">{p.responsableNom}</strong>.
                     </p>
-                    {p.statut === 'EN_RETARD' && (
+                    {estRetard(p.statut) && (
                       <div className="p-3 rounded-xl bg-destructive/10 border border-destructive/20 text-destructive space-y-1">
                         <div className="flex items-center gap-1.5 font-semibold">
                           <AlertTriangle className="w-4 h-4" strokeWidth={1.75} />
@@ -739,7 +744,7 @@ export default function DetailSalarieScreen() {
                       >
                         Remplir l&apos;évaluation
                       </Button>
-                      {isRH && p.statut === 'EN_RETARD' && (
+                      {isRH && estRetard(p.statut) && (
                         <Button
                           variant="outline"
                           size="sm"

@@ -159,31 +159,13 @@ public class NotificationEcheanceService {
                 }
             }
             // J+1 OU APRÈS ÉCHÉANCE : Blocage strict + alerte retard + passage en attente décision RH
-            else if (joursRestants < 0) {
-                int retard = (int) Math.abs(joursRestants);
-                periode.setJoursRetard(retard);
-
-                if (periode.getStatut() != StatutPeriode.EN_ATTENTE_DECISION_RH) {
-                    log.warn("[RETARD CRITIQUE / BLOCAGE J+1] Dossier {} bloqué (+{}j de retard).", salarie.getMatricule(), retard);
-                    periode.setStatut(StatutPeriode.EN_ATTENTE_DECISION_RH);
-                    salarie.setBloqueEmails(true);
-                    salarieRepository.save(salarie);
-
-                    // Alerte retard envoyée au Manager ET à l'Admin RH (CC)
-                    mailService.sendAlerteRetard(periode, retard);
-
-                    notificationService.creerAlerte(
-                            "BLOCAGE J+1 : Dossier " + salarie.getMatricule(),
-                            "Délai dépassé de " + retard + " jour(s). Le dossier est en attente de décision RH.",
-                            CibleRole.ALL_RH,
-                            salarie.getId()
-                    );
-                    blocagesJ1++;
-                }
-            }
+            // Les périodes en retard (échéance dépassée) sont traitées par detecterRetards(), appelé juste après la boucle
 
             periodeRepository.save(periode);
         }
+
+        // Le retard est constaté en continu (voir detecterRetards) ; on s'assure ici qu'aucun dossier n'est oublié
+        blocagesJ1 += detecterRetards(dateReference, true);
 
         return RapportExecution.builder()
                 .dateExecution(dateReference)
@@ -195,6 +177,76 @@ public class NotificationEcheanceService {
                 .dossiersBloquesJ1(blocagesJ1)
                 .message("Traitement des échéances complété avec succès.")
                 .build();
+    }
+
+    private static final Set<StatutPeriode> STATUTS_CLOTURES = EnumSet.of(
+            StatutPeriode.COMPLETEE, StatutPeriode.VALIDE, StatutPeriode.VALIDEE_RH, StatutPeriode.ROMPU,
+            StatutPeriode.RUPTURE, StatutPeriode.RENOUVELE, StatutPeriode.TERMINE);
+
+    /* Retard constaté sans attendre 09h00 : toutes les 5 minutes (et 20 s après chaque démarrage), tous les jours. */
+    @Scheduled(initialDelay = 20_000, fixedDelay = 300_000)
+    @Transactional
+    public void detecterRetardsPeriodiquement() {
+        int nouveaux = detecterRetards(LocalDate.now(), true);
+        if (nouveaux > 0) log.info("[DÉTECTION RETARD] {} dossier(s) passé(s) en retard.", nouveaux);
+    }
+
+    /*
+     * Constate les retards : une période ouverte dont l'échéance est dépassée passe immédiatement « en attente de décision RH »
+     * (jours de retard mis à jour, dossier bloqué, alerte RH). Ne dépend ni de l'heure ni des jours ouvrables.
+     * avecEmails = false pour un constat silencieux (création / import d'un historique) : aucun e-mail n'est envoyé au responsable.
+     * Renvoie le nombre de dossiers nouvellement passés en retard.
+     */
+    @Transactional
+    public int detecterRetards(LocalDate aujourdhui, boolean avecEmails) {
+        int nouveaux = 0;
+        for (PeriodeEvaluation periode : periodeRepository.findByDateEcheanceBefore(aujourdhui)) {
+            if (constaterRetard(periode, aujourdhui, avecEmails)) nouveaux++;
+        }
+        return nouveaux;
+    }
+
+    /* Même constat, limité aux périodes d'un salarié (appelé dès sa création). */
+    @Transactional
+    public void detecterRetardsDuSalarie(Long salarieId, boolean avecEmails) {
+        LocalDate aujourdhui = LocalDate.now();
+        for (PeriodeEvaluation periode : periodeRepository.findBySalarieId(salarieId)) {
+            if (periode.getDateEcheance() != null && periode.getDateEcheance().isBefore(aujourdhui)) {
+                constaterRetard(periode, aujourdhui, avecEmails);
+            }
+        }
+    }
+
+    private boolean constaterRetard(PeriodeEvaluation periode, LocalDate aujourdhui, boolean avecEmails) {
+        Salarie salarie = periode.getSalarie();
+        if (STATUTS_CLOTURES.contains(periode.getStatut()) || periode.getDecisionFinale() != null || !salarie.isActif()) {
+            return false;
+        }
+        int retard = (int) ChronoUnit.DAYS.between(periode.getDateEcheance(), aujourdhui);
+        boolean nouveau = periode.getStatut() != StatutPeriode.EN_ATTENTE_DECISION_RH;
+        boolean joursChanges = !Integer.valueOf(retard).equals(periode.getJoursRetard());
+        if (!nouveau && !joursChanges) return false;
+
+        periode.setJoursRetard(retard);
+        if (nouveau) {
+            log.warn("[RETARD / BLOCAGE J+1] Dossier {} bloqué (+{}j de retard).", salarie.getMatricule(), retard);
+            periode.setStatut(StatutPeriode.EN_ATTENTE_DECISION_RH);
+            salarie.setBloqueEmails(true);
+            salarieRepository.save(salarie);
+
+            if (avecEmails) {
+                // Alerte retard envoyée au Manager ET à l'Admin RH (CC)
+                mailService.sendAlerteRetard(periode, retard);
+            }
+            notificationService.creerAlerte(
+                    "BLOCAGE J+1 : Dossier " + salarie.getMatricule(),
+                    "Délai dépassé de " + retard + " jour(s). Le dossier est en attente de décision RH.",
+                    CibleRole.ALL_RH,
+                    salarie.getId()
+            );
+        }
+        periodeRepository.save(periode);
+        return nouveau;
     }
 
     /* Dernière étape de rappel déjà envoyée : 0 = aucune, 1 = J-21, 2 = J-14, 3 = J-7. */

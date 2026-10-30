@@ -33,7 +33,7 @@ export default function DashboardResponsable() {
     [periodes]
   );
   const latePeriodes = activePeriodes.filter(
-    (periode) => periode.statut === "EN_RETARD" || periode.statut === "EN_RETARD_CRITIQUE"
+    (periode) => periode.statut === "EN_RETARD" || periode.statut === "EN_RETARD_CRITIQUE" || periode.statut === "EN_ATTENTE_DECISION_RH"
   );
   const completedPeriodes = periodes.filter((periode) => TERMINAL_STATUSES.has(periode.statut));
   const upcomingPeriodes = [...activePeriodes]

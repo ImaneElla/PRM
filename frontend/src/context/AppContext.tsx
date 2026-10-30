@@ -267,6 +267,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     };
   }, []);
 
+  const annuaireAdminCharge = React.useRef(false);
+
   const refreshDashboardData = React.useCallback(async () => {
     try {
       const stats = await dashboardService.getDashboardStats();
@@ -307,6 +309,26 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       setRealPeriodesList(backendPeriodes.map(mapPeriodeBackend));
     } catch (e) {
       console.warn('Backend /salaries ou /periodes indisponible:', e);
+    }
+
+    // Responsables : un responsable reçoit uniquement sa propre fiche (c'est elle qui lui permet de retrouver son équipe) ;
+    // l'Admin RH reçoit l'annuaire complet, chargé une fois après la connexion
+    try {
+      const auth = getAuthUser();
+      if (auth?.role === 'RESPONSABLE') {
+        const moi = await responsableService.getMoi();
+        if (moi) {
+          setRealResponsables([{ ...moi, phone: moi.phone || '', poste: moi.poste || '', directionId: 1, directionName: 'Direction Générale' }]);
+        }
+      } else if (auth?.role === 'ADMIN_RH' && !annuaireAdminCharge.current) {
+        const liste = await responsableService.getAllResponsables();
+        if (liste) {
+          annuaireAdminCharge.current = true;
+          setRealResponsables(liste.map(r => ({ ...r, phone: r.phone || '', poste: r.poste || '', directionId: 1, directionName: 'Direction Générale' })));
+        }
+      }
+    } catch (e) {
+      console.warn('Chargement des responsables impossible:', e);
     }
   }, []);
 

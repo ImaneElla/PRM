@@ -126,7 +126,7 @@ export default function Header() {
   }, []);
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const retardsCount = periodes.filter((p) => p.statut === "EN_RETARD").length;
+  const retardsCount = periodes.filter((p) => p.statut === "EN_RETARD" || p.statut === "EN_ATTENTE_DECISION_RH").length;
 
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
     if (e.key === "Escape") {

@@ -148,7 +148,7 @@ public final class TableurExcel {
                         "Remplissez la feuille « Salariés », une ligne par salarié, puis importez le fichier dans l'application.",
                         "Remplacez ou supprimez la ligne d'exemple (ligne 2).",
                         "Colonnes obligatoires : nom, prénom, email, poste, date d'embauche.",
-                        "Facultatives : société (GRP, PRO, SRM, AFI, CCI ou SCP ; GRP par défaut), téléphone, responsable (son e-mail).",
+                        "Facultatives : société (GRP, PRO, SRM, AFI, CCI ou SCP ; GRP par défaut), téléphone, responsable (son e-mail, ou son nom complet ; il doit déjà exister dans « Gestion des responsables »).",
                         "Date d'embauche : une vraie date Excel, ou au format AAAA-MM-JJ / JJ/MM/AAAA.",
                         "Téléphone : formatez la colonne en « Texte » pour conserver le 0 initial.",
                         "Maximum 500 lignes par fichier ; une ligne en erreur n'empêche pas l'import des autres."}

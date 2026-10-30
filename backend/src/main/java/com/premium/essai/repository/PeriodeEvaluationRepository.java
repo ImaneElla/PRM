@@ -20,4 +20,6 @@ public interface PeriodeEvaluationRepository extends JpaRepository<PeriodeEvalua
     List<PeriodeEvaluation> findByDateEcheanceAndStatut(LocalDate dateEcheance, StatutPeriode statut);
     List<PeriodeEvaluation> findByStatutNot(StatutPeriode statut);
     Optional<PeriodeEvaluation> findByTokenAccesSalarie(String token);
+    // Périodes dont l'échéance est strictement antérieure à la date (candidates au retard)
+    List<PeriodeEvaluation> findByDateEcheanceBefore(LocalDate date);
 }

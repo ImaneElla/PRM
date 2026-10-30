@@ -21,6 +21,8 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Set;
@@ -51,6 +53,16 @@ public class PeriodeController {
                 .collect(Collectors.toList()));
     }
 
+    // Retard visible immédiatement : une période ouverte dont l'échéance est dépassée est affichée en retard,
+    // sans attendre le prochain passage de la détection (toutes les 5 minutes)
+    private boolean enRetardNonConstate(PeriodeEvaluation p) {
+        return p.getDateEcheance() != null
+                && p.getDateEcheance().isBefore(LocalDate.now())
+                && !STATUTS_CLOTURES.contains(p.getStatut())
+                && p.getDecisionFinale() == null
+                && p.getSalarie().isActif();
+    }
+
     private PeriodeResponseDTO mapToDTO(PeriodeEvaluation p) {
         Salarie s = p.getSalarie();
         Responsable r = p.getResponsable();
@@ -72,9 +84,11 @@ public class PeriodeController {
                 .dateDernierRappel(p.getDateDernierRappel())
                 .dateValidationEvaluateur(p.getDateValidationEvaluateur())
                 .dateValidationRH(p.getDateValidationRh())
-                .statut(p.getStatut().name())
+                .statut(enRetardNonConstate(p) ? StatutPeriode.EN_ATTENTE_DECISION_RH.name() : p.getStatut().name())
                 .decision(STATUTS_CLOTURES.contains(p.getStatut()) ? decisionPeriode(p) : null)
-                .joursRetard(p.getJoursRetard())
+                .joursRetard(enRetardNonConstate(p)
+                        ? Integer.valueOf((int) ChronoUnit.DAYS.between(p.getDateEcheance(), LocalDate.now()))
+                        : p.getJoursRetard())
                 .noteGlobale(p.getNoteGlobale())
                 .motifDecision(p.getMotifDecision())
                 .tokenAccesSalarie(p.getTokenAccesSalarie())

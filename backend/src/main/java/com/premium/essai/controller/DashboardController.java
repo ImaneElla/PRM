@@ -29,13 +29,20 @@ public class DashboardController {
     private final PeriodeEvaluationRepository periodeRepository;
     private final HistoriqueEmailRepository historiqueEmailRepository;
 
+    @org.springframework.transaction.annotation.Transactional(readOnly = true)
     @GetMapping("/stats")
     @Operation(summary = "Statistiques Dashboard RH")
     public ResponseEntity<DashboardStatsResponseDTO> getDashboardStats() {
         long totalSalariesActifs = salarieRepository.countByActifTrue();
         long totalEnCours = periodeRepository.countByStatut(StatutPeriode.EN_COURS);
         long totalEnRelance = periodeRepository.countByStatut(StatutPeriode.EN_RELANCE);
-        long totalEnRetard = periodeRepository.countByStatut(StatutPeriode.EN_RETARD_CRITIQUE);
+        // Retards réels : période ouverte dont l'échéance est dépassée (constatée ou en cours de constat)
+        long totalEnRetard = periodeRepository.findByDateEcheanceBefore(java.time.LocalDate.now()).stream()
+                .filter(p -> p.getSalarie().isActif() && p.getDecisionFinale() == null
+                        && !java.util.EnumSet.of(StatutPeriode.COMPLETEE, StatutPeriode.VALIDE, StatutPeriode.VALIDEE_RH,
+                                StatutPeriode.ROMPU, StatutPeriode.RUPTURE, StatutPeriode.RENOUVELE, StatutPeriode.TERMINE)
+                        .contains(p.getStatut()))
+                .count();
         long totalCompletees = periodeRepository.countByStatut(StatutPeriode.COMPLETEE);
 
         // Calcul exact des Titularisations & Ruptures

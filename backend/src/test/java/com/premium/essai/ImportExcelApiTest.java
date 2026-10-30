@@ -99,7 +99,14 @@ class ImportExcelApiTest {
             mockMvc.perform(get(chemin).header("Authorization", admin))
                     .andExpect(status().isOk())
                     .andExpect(content().contentTypeCompatibleWith(TableurExcel.TYPE_XLSX))
-                    .andExpect(header().string("Content-Disposition", org.hamcrest.Matchers.containsString(".xlsx")));
+                    .andExpect(header().string("Content-Disposition", org.hamcrest.Matchers.containsString(".xlsx")))
+                    // Le fichier n'est pas vide : un vrai classeur Excel (archive ZIP « PK ») de plusieurs ko
+                    .andExpect(result -> {
+                        byte[] octets = result.getResponse().getContentAsByteArray();
+                        org.junit.jupiter.api.Assertions.assertTrue(octets.length > 2000, "fichier trop petit : " + octets.length);
+                        org.junit.jupiter.api.Assertions.assertEquals('P', octets[0]);
+                        org.junit.jupiter.api.Assertions.assertEquals('K', octets[1]);
+                    });
         }
     }
 

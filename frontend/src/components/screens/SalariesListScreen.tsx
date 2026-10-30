@@ -218,7 +218,7 @@ export default function SalariesListScreen() {
   return (
     <div className="space-y-5 font-sans">
       {/* ===================== HEADER ===================== */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
         <div>
           <h2 className="text-lg md:text-xl font-bold text-foreground tracking-tight">
             {isRH ? "Salariés en Période d'Essai" : "Mes Salariés Affectés"}
@@ -240,7 +240,7 @@ export default function SalariesListScreen() {
         </div>
 
         {isRH && (
-          <div className="flex flex-wrap items-center gap-2 shrink-0">
+          <div className="flex flex-nowrap items-center gap-2 shrink-0 whitespace-nowrap overflow-x-auto [&_button]:shrink-0">
             <input
               ref={fichierCsvRef}
               type="file"

@@ -30,39 +30,49 @@ export default function RetardsScreen() {
   const relances = periodesActives.filter(p => p.statut === 'EN_RELANCE');
   const alertes  = periodesActives.filter(p => p.statut === 'EN_RETARD' || p.statut === 'EN_RELANCE' || p.statut === 'EN_ATTENTE_DECISION_RH');
 
+  // 2026-04-05 -> 05/04/2026
+  const formatDateFr = (date?: string) => {
+    const m = date?.match(/^(\d{4})-(\d{2})-(\d{2})/);
+    return m ? `${m[3]}/${m[2]}/${m[1]}` : date || '—';
+  };
+
   const getStatutConfig = (statut: string) => {
     switch (statut) {
       case 'EN_ATTENTE_DECISION_RH':
         return {
-          label: 'EN ATTENTE DÉCISION RH',
-          badgeVariant: 'destructive' as const,
-          severity: 'BLOQUÉ J+1',
-          severityClass: 'bg-rose-100 text-rose-800 border-rose-300 font-bold animate-pulse',
-          rowClass: 'bg-rose-50/50'
+          label: 'En attente décision RH',
+          statutClass: 'border-rose-200 bg-rose-50 text-rose-700',
+          dotClass: 'bg-rose-500',
+          severity: 'Bloqué J+1',
+          severityClass: 'border-rose-200 bg-rose-100 text-rose-800',
+          accentClass: 'border-l-[#E4002B]'
         };
       case 'EN_RETARD':
         return {
           label: 'En retard',
-          badgeVariant: 'destructive' as const,
-          severity: 'CRITIQUE',
-          severityClass: 'bg-red-100 text-red-700 border-red-200',
-          rowClass: 'bg-red-50/30'
+          statutClass: 'border-red-200 bg-red-50 text-red-700',
+          dotClass: 'bg-red-500',
+          severity: 'Critique',
+          severityClass: 'border-red-200 bg-red-100 text-red-700',
+          accentClass: 'border-l-[#E4002B]'
         };
       case 'EN_RELANCE':
         return {
           label: 'En relance',
-          badgeVariant: 'secondary' as const,
-          severity: 'MODÉRÉ',
-          severityClass: 'bg-amber-50 text-amber-800 border-amber-200',
-          rowClass: 'bg-amber-50/20'
+          statutClass: 'border-amber-200 bg-amber-50 text-amber-800',
+          dotClass: 'bg-amber-500',
+          severity: 'Modéré',
+          severityClass: 'border-amber-200 bg-amber-50 text-amber-800',
+          accentClass: 'border-l-amber-400'
         };
       default:
         return {
           label: statut,
-          badgeVariant: 'secondary' as const,
-          severity: 'NORMAL',
-          severityClass: 'bg-zinc-100 text-zinc-600 border-zinc-200',
-          rowClass: ''
+          statutClass: 'border-zinc-200 bg-zinc-100 text-zinc-600',
+          dotClass: 'bg-zinc-400',
+          severity: 'Normal',
+          severityClass: 'border-zinc-200 bg-zinc-100 text-zinc-600',
+          accentClass: 'border-l-transparent'
         };
     }
   };
@@ -186,71 +196,82 @@ export default function RetardsScreen() {
       ) : (
         <Card className="overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs">
-              <thead className="border-b border-[#E8E8ED] text-[#6E6E73] font-semibold uppercase tracking-wider text-[10px]">
-                <tr>
-                  <th className="py-3.5 px-4">Salarié</th>
-                  <th className="py-3.5 px-4">Responsable</th>
-                  <th className="py-3.5 px-4">Type de Bilan</th>
-                  <th className="py-3.5 px-4">Échéance</th>
-                  <th className="py-3.5 px-4">Statut</th>
-                  <th className="py-3.5 px-4">Sévérité</th>
-                  <th className="py-3.5 px-4">Dernier rappel</th>
-                  <th className="py-3.5 px-4 text-right">Actions</th>
+            <table className="w-full min-w-[1040px] table-fixed border-collapse text-left text-[13px]">
+              <colgroup>
+                <col style={{ width: '19%' }} />
+                <col style={{ width: '19%' }} />
+                <col style={{ width: '8%' }} />
+                <col style={{ width: '13%' }} />
+                <col style={{ width: '16%' }} />
+                <col style={{ width: '9%' }} />
+                <col style={{ width: '7%' }} />
+                <col style={{ width: '9%' }} />
+              </colgroup>
+              <thead>
+                <tr className="border-b border-[#E8E8ED] bg-[#FAFAFC] text-[11px] font-semibold uppercase tracking-[0.06em] text-[#6E6E73]">
+                  <th className="whitespace-nowrap py-3 pl-6 pr-3">Salarié</th>
+                  <th className="whitespace-nowrap px-3 py-3">Responsable</th>
+                  <th className="whitespace-nowrap px-3 py-3">Bilan</th>
+                  <th className="whitespace-nowrap px-3 py-3">Échéance</th>
+                  <th className="whitespace-nowrap px-3 py-3">Statut</th>
+                  <th className="whitespace-nowrap px-3 py-3">Sévérité</th>
+                  <th className="whitespace-nowrap px-3 py-3">Rappel</th>
+                  <th className="whitespace-nowrap py-3 pl-3 pr-6 text-right">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-border/60 text-foreground">
+              <tbody className="divide-y divide-[#F0F0F3] text-[#1D1D1F]">
                 {alertes.map((p) => {
                   const config = getStatutConfig(p.statut);
                   const is3M = p.typePeriode === 'TROIS_MOIS' || p.typePeriode === 'DEUX_MOIS';
 
                   return (
-                    <tr key={p.id} className={`hover:bg-[#F5F5F7] transition-all duration-200 ${config.rowClass}`}>
-                      <td className="py-3.5 px-4">
+                    <tr key={p.id} className="transition-colors duration-200 hover:bg-[#F5F5F7]/80">
+                      <td className={`border-l-[3px] py-3.5 pl-[21px] pr-3 align-middle ${config.accentClass}`}>
                         <span
                           onClick={() => navigateTo('detail-salarie', { salarieId: p.salarieId })}
-                          className="font-semibold text-foreground hover:text-primary cursor-pointer block tracking-tight"
+                          title={p.salarieNom}
+                          className="block cursor-pointer truncate font-semibold tracking-tight text-[#1D1D1F] hover:text-[#E4002B]"
                         >
                           {p.salarieNom}
                         </span>
-                        <span className="block text-[11px] text-muted-foreground">{p.salariePoste}</span>
+                        <span title={p.salariePoste} className="block truncate text-[12px] text-[#6E6E73]">{p.salariePoste}</span>
                       </td>
-                      <td className="py-3.5 px-4">
-                        <span className="font-medium text-foreground">{p.responsableNom}</span>
-                        <span className="block text-[11px] text-muted-foreground">{p.responsableEmail}</span>
+                      <td className="px-3 py-3.5 align-middle">
+                        <span title={p.responsableNom} className="block truncate font-medium">{p.responsableNom}</span>
+                        <span title={p.responsableEmail} className="block truncate text-[12px] text-[#6E6E73]">{p.responsableEmail}</span>
                       </td>
-                      <td className="py-3.5 px-4">
-                        <Badge variant="secondary" className="text-[11px] font-normal">
-                          {is3M ? 'Période 1 (3 Mois)' : 'Période 2 (6 Mois)'}
-                        </Badge>
+                      <td className="px-3 py-3.5 align-middle">
+                        <span className="inline-flex whitespace-nowrap rounded-full bg-[#F5F5F7] px-2.5 py-1 text-[11px] font-medium text-[#515154]">
+                          {is3M ? '3 mois' : '6 mois'}
+                        </span>
                       </td>
-                      <td className="py-3.5 px-4 font-mono text-[11px]">
-                        {p.dateEcheance}
+                      <td className="px-3 py-3.5 align-middle">
+                        <span className="block whitespace-nowrap font-medium tabular-nums">{formatDateFr(p.dateEcheance)}</span>
                         {p.statut === 'EN_RELANCE' ? (
-                          <span className="block text-amber-700 font-semibold mt-0.5">J-14 • Relance</span>
+                          <span className="block whitespace-nowrap text-[12px] font-medium text-amber-700">Relance J-14</span>
                         ) : p.joursRetard && p.joursRetard > 0 ? (
-                          <span className="block text-rose-700 font-bold mt-0.5">+{p.joursRetard}j de retard</span>
+                          <span className="block whitespace-nowrap text-[12px] font-semibold text-rose-700">
+                            {p.joursRetard} j de retard
+                          </span>
                         ) : (
-                          <span className="block text-rose-700 font-semibold mt-0.5">J-7 • Alerte critique</span>
+                          <span className="block whitespace-nowrap text-[12px] font-medium text-rose-700">Alerte J-7</span>
                         )}
                       </td>
-                      <td className="py-3.5 px-4">
-                        <Badge
-                          variant={config.badgeVariant}
-                          className={`text-[10px] ${p.statut === 'EN_RELANCE' ? 'bg-amber-100 text-amber-800 border-amber-200' : ''}`}
-                        >
+                      <td className="px-3 py-3.5 align-middle">
+                        <span className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border px-2.5 py-1 text-[11px] font-semibold ${config.statutClass}`}>
+                          <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${config.dotClass}`} />
                           {config.label}
-                        </Badge>
+                        </span>
                       </td>
-                      <td className="py-3.5 px-4">
-                        <span className={`text-[10px] font-semibold px-2 py-0.5 rounded border ${config.severityClass}`}>
+                      <td className="px-3 py-3.5 align-middle">
+                        <span className={`inline-flex whitespace-nowrap rounded-full border px-2.5 py-1 text-[11px] font-semibold ${config.severityClass}`}>
                           {config.severity}
                         </span>
                       </td>
-                      <td className="py-3.5 px-4 font-mono text-[11px] text-muted-foreground">
-                        {p.dateDernierRappel || '—'}
+                      <td className="whitespace-nowrap px-3 py-3.5 align-middle tabular-nums text-[#6E6E73]">
+                        {p.dateDernierRappel ? formatDateFr(p.dateDernierRappel) : '—'}
                       </td>
-                      <td className="py-3.5 px-4 text-right">
+                      <td className="py-3.5 pl-3 pr-6 text-right align-middle">
                         <div className="flex items-center justify-end gap-1.5">
                           {isRH ? (
                             <ConsulterBouton periode={p} size="sm" />
@@ -258,9 +279,9 @@ export default function RetardsScreen() {
                             <Button
                               onClick={() => navigateTo('formulaire-evaluation', { periodeId: p.id })}
                               size="sm"
-                              className="flex items-center gap-1 cursor-pointer shadow-xs font-medium"
+                              className="flex cursor-pointer items-center gap-1 whitespace-nowrap font-medium shadow-xs"
                             >
-                              <Clock className="w-3 h-3" strokeWidth={1.75} /> Remplir l&apos;évaluation
+                              <Clock className="h-3 w-3" strokeWidth={1.75} /> Remplir l&apos;évaluation
                             </Button>
                           )}
                         </div>

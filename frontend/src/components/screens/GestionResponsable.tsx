@@ -227,7 +227,7 @@ export default function GestionResponsable() {
 
   return (
     <div className="space-y-8 font-sans">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-[#1D1D1F] dark:text-zinc-100">
             Gestion des Responsables
@@ -237,7 +237,7 @@ export default function GestionResponsable() {
           </p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-nowrap items-center gap-2 shrink-0 whitespace-nowrap overflow-x-auto [&_button]:shrink-0">
           <input
             ref={fichierCsvRef}
             type="file"

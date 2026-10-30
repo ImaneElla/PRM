@@ -123,6 +123,23 @@ class AccessControlTest {
     }
 
     @Test
+    void responsableRetrouveSaPropreFicheEtSeulementLa() throws Exception {
+        mockMvc.perform(get("/api/compte/moi").header("Authorization", jeton(emailRespoA)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.firstName").value("Resp"))
+                .andExpect(jsonPath("$.lastName").value("a"))
+                .andExpect(jsonPath("$.id").isNumber());
+
+        // Un Admin RH n'a pas de fiche responsable ; un compte responsable non relié non plus
+        mockMvc.perform(get("/api/compte/moi").header("Authorization", jeton(emailAdmin)))
+                .andExpect(status().isNotFound());
+        String sansFiche = creerCompte("respo-sans-fiche", UserRole.RESPONSABLE, null);
+        mockMvc.perform(get("/api/compte/moi").header("Authorization", jeton(sansFiche)))
+                .andExpect(status().isNotFound());
+        mockMvc.perform(get("/api/compte/moi")).andExpect(status().is4xxClientError());
+    }
+
+    @Test
     void adminSeesAllSalaries() throws Exception {
         mockMvc.perform(get("/api/salaries").header("Authorization", jeton(emailAdmin)))
                 .andExpect(status().isOk())
