@@ -124,19 +124,40 @@ public final class ModelesEmail {
 
                     Cordialement,
                     Service des Ressources Humaines""",
+                    null, null),
+
+            // Envoyé à TOUS les administrateurs dès qu'un responsable remplit l'évaluation (délai -2 = « à la soumission »)
+            new Modele("email_evaluation_recue", "Évaluation reçue (envoyé aux administrateurs)", -2, TypeEmail.CONFIRMATION_RH,
+                    "Évaluation reçue : {nom_salarie} ({matricule})",
+                    """
+                    Bonjour {nom_admin},
+
+                    {nom_manager} vient de remplir l’évaluation de la période d’essai de {nom_salarie} (matricule : {matricule}).
+
+                    - Note globale : {note_globale}
+                    - Recommandation du responsable : {recommandation}
+                    - Date de soumission : {date_soumission}
+
+                    Vous pouvez consulter le détail de l’évaluation et enregistrer la décision RH dans l’application :
+                    {lien_application}
+
+                    Cordialement,
+                    Service des Ressources Humaines""",
                     null, null)
     );
 
     // Champs proposés dans l'écran Paramètres
     public static final List<String> CHAMPS_PROPOSES = List.of(
             "{nom_manager}", "{nom_salarie}", "{date_echeance}", "{date_limite}",
-            "{lien_evaluation}", "{lien_application}", "{identifiant}", "{jours_retard}");
+            "{lien_evaluation}", "{lien_application}", "{identifiant}", "{jours_retard}",
+            "{nom_admin}", "{matricule}", "{note_globale}", "{recommandation}", "{date_soumission}");
 
     // Champs acceptés à l'enregistrement : les précédents + les anciens noms. Un champ inconnu serait envoyé tel quel.
     public static final List<String> CHAMPS_ACCEPTES = List.of(
             "{nom_manager}", "{responsable}", "{nom_salarie}", "{salarie}", "{date_echeance}", "{echeance}",
             "{date_limite}", "{lien_evaluation}", "{lien}", "{lien_application}", "{identifiant}",
-            "{mot_de_passe_temporaire}", "{jours_retard}");
+            "{mot_de_passe_temporaire}", "{jours_retard}",
+            "{nom_admin}", "{matricule}", "{note_globale}", "{recommandation}", "{date_soumission}");
 
     public static java.util.Optional<Modele> parDefaut(String id) {
         return PAR_DEFAUT.stream().filter(m -> m.id().equals(id)).findFirst();

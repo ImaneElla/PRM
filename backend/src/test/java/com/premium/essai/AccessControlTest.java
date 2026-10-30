@@ -180,8 +180,10 @@ class AccessControlTest {
                 .andExpect(status().isForbidden());
         mockMvc.perform(get("/api/responsables").header("Authorization", token))
                 .andExpect(status().isForbidden());
+        // Un responsable accède à ses propres notifications (liste vide ici), jamais à celles des RH
         mockMvc.perform(get("/api/notifications").header("Authorization", token))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(0));
         mockMvc.perform(get("/api/dashboard/audit-emails").header("Authorization", token))
                 .andExpect(status().isForbidden());
         mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put("/api/parametres")

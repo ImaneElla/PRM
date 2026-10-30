@@ -15,4 +15,6 @@ public interface NotificationRepository extends JpaRepository<Notification, Long
     List<Notification> findByTargetIdIsNullAndTitreIn(Collection<String> titres);
     List<Notification> findByCibleRoleAndEstLueFalseOrderByDateCreationDesc(CibleRole cibleRole);
     List<Notification> findByCibleRoleOrderByDateCreationDesc(CibleRole cibleRole);
+    List<Notification> findByDestinataireResponsableIdOrderByDateCreationDesc(Long responsableId);
+    List<Notification> findByDestinataireResponsableIdAndEstLueFalse(Long responsableId);
 }

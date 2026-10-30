@@ -330,6 +330,13 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     } catch (e) {
       console.warn('Chargement des responsables impossible:', e);
     }
+
+    // Notifications : rechargées régulièrement pour que les nouvelles apparaissent sans recharger la page
+    try {
+      setRealNotifications(await notificationService.getAllRH());
+    } catch (e) {
+      console.warn('Notifications indisponibles:', e);
+    }
   }, []);
 
   const openAddSalarieModal = () => setIsAddSalarieModalOpen(true);

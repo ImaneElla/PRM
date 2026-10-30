@@ -47,10 +47,9 @@ export default function NotificationsScreen() {
 
   const [filter, setFilter] = useState<'all' | 'unread'>('all');
 
-  // Include notifications for TOUS, matching currentRole, or without specific role restriction
-  const roleNotifications = notifications.filter(
-    (n) => !n.cibleRole || n.cibleRole === 'TOUS' || n.cibleRole === 'ALL_RH' || n.cibleRole === currentRole || n.cibleRole === 'ADMIN_RH'
-  );
+  // Le serveur ne renvoie que les notifications de l'utilisateur connecté (RH partagées pour un admin,
+  // les siennes pour un responsable) : pas de filtre supplémentaire par rôle
+  const roleNotifications = notifications;
 
   const visible = filter === 'unread'
     ? roleNotifications.filter(n => !n.estLue)

@@ -85,12 +85,13 @@ class ModelesEmailParametresTest {
     }
 
     @Test
-    void listeLesQuatreModelesAvecLeursChamps() throws Exception {
+    void listeLesModelesAvecLeursChamps() throws Exception {
         mockMvc.perform(get("/api/parametres/modeles-email").header("Authorization", admin))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.length()").value(4))
+                .andExpect(jsonPath("$.length()").value(5))
                 .andExpect(jsonPath("$[0].id").value("email_j21"))
                 .andExpect(jsonPath("$[3].id").value("email_retard"))
+                .andExpect(jsonPath("$[4].id").value("email_evaluation_recue"))
                 .andExpect(jsonPath("$[0].personnalise").value(false))
                 .andExpect(jsonPath("$[0].champs[0]").value("{nom_manager}"));
     }

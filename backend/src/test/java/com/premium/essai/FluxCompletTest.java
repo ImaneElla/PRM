@@ -77,6 +77,7 @@ class FluxCompletTest {
     @Autowired private SalarieService salarieService;
     @Autowired private EvaluationService evaluationService;
     @Autowired private NotificationEcheanceService cron;
+    @Autowired private com.premium.essai.repository.NotificationRepository notificationRepository;
 
     @MockBean private MailService mailService;
 
@@ -138,6 +139,8 @@ class FluxCompletTest {
         cron.traiterEcheances(echeance.minusDays(19), true);
         verify(mailService, times(1)).sendRappelJ21(any());
         assertEquals(StatutPeriode.EN_COURS, recharger(p1).getStatut());
+        // Le responsable concerné a aussi une notification dans son espace
+        assertEquals(1, notificationRepository.findByDestinataireResponsableIdOrderByDateCreationDesc(responsable.getId()).size());
 
         // Un deuxième passage le même jour n'envoie rien de plus
         cron.traiterEcheances(echeance.minusDays(18), true);

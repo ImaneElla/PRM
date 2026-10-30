@@ -5,7 +5,9 @@ import com.premium.essai.model.ParametresCompte;
 import com.premium.essai.model.PeriodeEvaluation;
 import com.premium.essai.model.TemplateEmail;
 import com.premium.essai.model.User;
+import com.premium.essai.model.enums.RecommandationEvaluateur;
 import com.premium.essai.model.enums.RoleDestinataire;
+import com.premium.essai.model.enums.UserRole;
 import com.premium.essai.model.enums.StatutEmail;
 import com.premium.essai.model.enums.TypeEmail;
 import com.premium.essai.repository.HistoriqueEmailRepository;
@@ -26,6 +28,8 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -98,33 +102,84 @@ public class MailServiceImpl implements MailService {
         logHistorique(periode, destinataire, periode.getResponsable().getLastName(), RoleDestinataire.RESPONSABLE, objet, TypeEmail.EMAIL_3_EN_RETARD, corps, null, succes);
     }
 
+    // Envoyé à TOUS les administrateurs actifs dès qu'un responsable remplit l'évaluation
     @Override
     @Transactional
-    public void sendNotificationFormulaireRempliAuxAdmins(PeriodeEvaluation periode) {
+    public void sendNotificationFormulaireRempliAuxAdmins(PeriodeEvaluation periode, RecommandationEvaluateur recommandation) {
+        List<User> admins = userRepository.findByRole(UserRole.ADMIN_RH).stream().filter(User::isEnabled).toList();
+        if (admins.isEmpty()) {
+            log.warn("Aucun administrateur actif à prévenir pour l'évaluation de la période {}.", periode.getId());
+            return;
+        }
+        TemplateEmail modele = templateEmailRepository.findByTypeEmail(TypeEmail.CONFIRMATION_RH).orElse(null);
+        String nomSalarie = periode.getSalarie().getFirstName() + " " + periode.getSalarie().getLastName();
+        String nomManager = periode.getResponsable().getFirstName() + " " + periode.getResponsable().getLastName();
+        String note = periode.getNoteGlobale() != null ? String.format(Locale.FRANCE, "%.2f / 5", periode.getNoteGlobale()) : "—";
+        String reco = libelleRecommandation(recommandation);
+        String dateSoumission = LocalDate.now().format(DATE_FR);
+
+        for (User admin : admins) {
+            String nomAdmin = ((admin.getPrenom() != null ? admin.getPrenom() : "") + " "
+                    + (admin.getNom() != null ? admin.getNom() : "")).trim();
+            if (nomAdmin.isEmpty()) nomAdmin = "Administrateur";
+            Map<String, String> champs = Map.of(
+                    "nom_admin", nomAdmin,
+                    "matricule", periode.getSalarie().getMatricule(),
+                    "note_globale", note,
+                    "recommandation", reco,
+                    "date_soumission", dateSoumission);
+
+            String objet;
+            String corps;
+            if (modele != null) {
+                objet = remplirModele(modele.getObjet(), periode, null, champs);
+                corps = remplirModele(modele.getContenu(), periode, null, champs);
+            } else {
+                objet = "Évaluation reçue : " + nomSalarie + " (" + periode.getSalarie().getMatricule() + ")";
+                corps = "Bonjour " + nomAdmin + ",\n\n" + nomManager + " vient de remplir l'évaluation de la période d'essai de "
+                        + nomSalarie + ".\n\nNote globale : " + note + "\nRecommandation : " + reco
+                        + "\nDate de soumission : " + dateSoumission + "\n\nConsultez le détail : " + frontendUrl + "/connexion\n\n"
+                        + "Service des Ressources Humaines";
+            }
+            boolean succes = dispatchEmail(admin.getEmail(), objet, corps);
+            logHistorique(periode, admin.getEmail(), nomAdmin, RoleDestinataire.ADMIN, objet, TypeEmail.CONFIRMATION_RH,
+                    corps, frontendUrl + "/connexion", succes);
+        }
+    }
+
+    // Confirmation envoyée au responsable qui vient de remplir l'évaluation
+    @Override
+    @Transactional
+    public void sendConfirmationSoumissionAuResponsable(PeriodeEvaluation periode) {
         String nomSalarie = periode.getSalarie().getFirstName() + " " + periode.getSalarie().getLastName();
         String nomManager = periode.getResponsable().getFirstName() + " " + periode.getResponsable().getLastName();
         String emailManager = periode.getResponsable().getEmail();
 
-        ParametresCompte params = parametresCompteRepository.findFirstByOrderByIdAsc().orElse(null);
-        String rhEmail = (params != null && params.getEmailExpediteur() != null) ? params.getEmailExpediteur() : expediteurParDefaut;
-
         String objet = "Confirmation de soumission : Évaluation période d'essai - " + nomSalarie;
-        String corps = String.format(
+        String corps = String.format(Locale.FRANCE,
                 "Bonjour %s,\n\n" +
-                "Nous vous confirmons la bonne réception et validation de l'évaluation de la période d'essai pour %s (matricule : %s).\n\n" +
+                "Nous vous confirmons la bonne réception de l'évaluation de la période d'essai pour %s (matricule : %s).\n\n" +
                 "Note globale : %.2f / 5\n" +
                 "Date de soumission : %s\n\n" +
-                "Une copie complète de ce dossier a été transmise à la Direction RH pour suivi et validation finale.\n\n" +
+                "Le dossier a été transmis à la Direction RH pour suivi et validation finale.\n\n" +
                 "Cordialement,\n" +
-                "Direction RH - Groupe Premium",
+                "Service des Ressources Humaines",
                 nomManager, nomSalarie, periode.getSalarie().getMatricule(),
                 periode.getNoteGlobale() != null ? periode.getNoteGlobale() : 0.0,
-                LocalDate.now()
+                LocalDate.now().format(DATE_FR)
         );
 
-        // Confirmation au responsable avec copie (CC) à l'Admin RH
-        boolean succes = dispatchEmail(emailManager, rhEmail, objet, corps);
+        boolean succes = dispatchEmail(emailManager, objet, corps);
         logHistorique(periode, emailManager, nomManager, RoleDestinataire.RESPONSABLE, objet, TypeEmail.CONFIRMATION_RH, corps, null, succes);
+    }
+
+    private static String libelleRecommandation(RecommandationEvaluateur recommandation) {
+        if (recommandation == null) return "—";
+        return switch (recommandation) {
+            case CONFIRMATION_CDI -> "Confirmation (titularisation)";
+            case PROLONGATION_ESSAI -> "Prolongation / renouvellement de la période d'essai";
+            case RUPTURE_CONTRAT -> "Arrêt du contrat";
+        };
     }
 
     @Override
@@ -161,6 +216,11 @@ public class MailServiceImpl implements MailService {
 
     // Champs disponibles dans les modèles d'e-mail (les anciens noms restent acceptés)
     private String remplirModele(String modele, PeriodeEvaluation periode, Integer joursRetard) {
+        return remplirModele(modele, periode, joursRetard, Map.of());
+    }
+
+    // « champs » : valeurs propres à un modèle (ex. nom_admin, note_globale), remplacées en plus des champs communs
+    private String remplirModele(String modele, PeriodeEvaluation periode, Integer joursRetard, Map<String, String> champs) {
         String nomSalarie = periode.getSalarie().getFirstName() + " " + periode.getSalarie().getLastName();
         String nomResponsable = periode.getResponsable().getFirstName() + " " + periode.getResponsable().getLastName();
         String echeance = periode.getDateEcheance() != null ? periode.getDateEcheance().format(DATE_FR) : "";
@@ -169,7 +229,7 @@ public class MailServiceImpl implements MailService {
         String motDePasse = "celui que vous avez choisi à votre première connexion "
                 + "(en cas d'oubli : « Mot de passe oublié » sur la page de connexion)";
 
-        return modele
+        String texte = modele
                 .replace("{responsable}", nomResponsable)
                 .replace("{nom_manager}", nomResponsable)
                 .replace("{salarie}", nomSalarie)
@@ -184,6 +244,10 @@ public class MailServiceImpl implements MailService {
                 .replace("{identifiant}", periode.getResponsable().getEmail())
                 .replace("{mot_de_passe_temporaire}", motDePasse)
                 .replace("{jours_retard}", joursRetard != null ? String.valueOf(joursRetard) : "");
+        for (Map.Entry<String, String> champ : champs.entrySet()) {
+            texte = texte.replace("{" + champ.getKey() + "}", champ.getValue());
+        }
+        return texte;
     }
 
     @Override

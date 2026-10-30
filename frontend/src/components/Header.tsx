@@ -84,7 +84,9 @@ export default function Header() {
 
   const profilePrenom = authUser?.prenom ?? "";
   const profileNom = authUser?.nom ?? "";
-  const profileLabel = authUser?.role ?? "";
+  // Libellé lisible du rôle (au lieu du code technique ADMIN_RH / RESPONSABLE)
+  const LIBELLES_ROLE: Record<string, string> = { ADMIN_RH: "Admin", RESPONSABLE: "Responsable" };
+  const profileLabel = LIBELLES_ROLE[authUser?.role ?? ""] ?? authUser?.role ?? "";
 
   const initials = getInitials(profilePrenom, profileNom);
   const fullName = `${profilePrenom} ${profileNom}`.trim() || "Utilisateur";

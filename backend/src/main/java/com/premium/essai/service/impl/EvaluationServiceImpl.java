@@ -156,7 +156,15 @@ public class EvaluationServiceImpl implements EvaluationService {
                 salarie.getId()
         );
 
-        mailService.sendNotificationFormulaireRempliAuxAdmins(periode);
+        // Responsable concerné : notification dans son espace + confirmation par e-mail ; tous les admins : e-mail
+        notificationService.creerAlerteResponsable(
+                "Évaluation enregistrée : " + nomSalarie,
+                "Votre évaluation a bien été transmise à la Direction RH. Recommandation : " + recommandation.name() + ".",
+                periode.getResponsable().getId(),
+                salarie.getId()
+        );
+        mailService.sendConfirmationSoumissionAuResponsable(periode);
+        mailService.sendNotificationFormulaireRempliAuxAdmins(periode, recommandation);
 
         return mapToResponseDTO(savedDetail, periodeSuivante);
     }
@@ -221,6 +229,19 @@ public class EvaluationServiceImpl implements EvaluationService {
         salarieRepository.save(salarie);
         periodeRepository.save(periode);
         log.info("Décision RH {} enregistrée pour {}", dto.getDecisionFinale(), salarie.getMatricule());
+
+        // Le responsable concerné est prévenu de la décision prise par la RH
+        String decision = switch (dto.getDecisionFinale()) {
+            case RUPTURE -> "arrêt du contrat";
+            case VALIDATION -> "titularisation";
+            case RENOUVELLEMENT -> "renouvellement de la période d'essai";
+        };
+        notificationService.creerAlerteResponsable(
+                "Décision RH : " + salarie.getFirstName() + " " + salarie.getLastName(),
+                "La Direction RH a enregistré la décision suivante : " + decision + ".",
+                periode.getResponsable() != null ? periode.getResponsable().getId() : null,
+                salarie.getId()
+        );
     }
 
     private PeriodeEvaluation creerPeriodeSuivante(Salarie salarie) {

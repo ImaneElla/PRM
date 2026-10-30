@@ -16,10 +16,16 @@ const DESCRIPTION_CHAMPS: Record<string, string> = {
   '{lien_application}': "Lien vers la page de connexion",
   '{identifiant}': "Identifiant de connexion (e-mail du responsable)",
   '{jours_retard}': 'Nombre de jours de retard (e-mail de retard)',
+  '{nom_admin}': "Nom de l'administrateur destinataire",
+  '{matricule}': 'Matricule du salarié',
+  '{note_globale}': "Note globale de l'évaluation",
+  '{recommandation}': 'Recommandation du responsable',
+  '{date_soumission}': "Date de soumission de l'évaluation",
 };
 
 const libelleDelai = (delai: number) =>
-  delai < 0 ? "Envoyé le lendemain de l'échéance, quand le dossier est bloqué (retard)"
+  delai === -2 ? "Envoyé à tous les administrateurs dès qu'un responsable remplit l'évaluation"
+  : delai < 0 ? "Envoyé le lendemain de l'échéance, quand le dossier est bloqué (retard)"
   : `Envoyé automatiquement ${delai} jours avant l'échéance (J-${delai})`;
 
 type IconName = 'gear' | 'mail' | 'check' | 'info' | 'shield' | 'eye' | 'chevron' | 'person';

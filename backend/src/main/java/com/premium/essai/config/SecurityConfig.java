@@ -36,7 +36,6 @@ public class SecurityConfig {
                         // Réservé à l'Admin RH : annuaire des responsables, comptes admins, journaux, réglages, décisions
                         .requestMatchers("/api/responsables/**").hasRole("ADMIN_RH")
                         .requestMatchers("/api/admins/**").hasRole("ADMIN_RH")
-                        .requestMatchers("/api/notifications/**").hasRole("ADMIN_RH")
                         .requestMatchers("/api/dashboard/audit-emails").hasRole("ADMIN_RH")
                         .requestMatchers("/api/test/**").hasRole("ADMIN_RH")
                         .requestMatchers(HttpMethod.PUT, "/api/parametres").hasRole("ADMIN_RH")

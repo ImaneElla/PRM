@@ -7,7 +7,9 @@ import com.premium.essai.model.enums.NotificationType;
 import com.premium.essai.repository.NotificationRepository;
 import com.premium.essai.service.NotificationService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
@@ -39,6 +41,50 @@ public class NotificationServiceImpl implements NotificationService {
                 .dateCreation(LocalDateTime.now())
                 .build();
         notificationRepository.save(notification);
+    }
+
+    @Override
+    @Transactional
+    public void creerAlerteResponsable(String titre, String message, Long responsableId, Long targetId) {
+        if (responsableId == null) return;
+        notificationRepository.save(Notification.builder()
+                .titre(titre)
+                .message(message)
+                .type(NotificationType.INFO)
+                .priorite(NotificationPriority.HIGH)
+                .cibleRole(CibleRole.MANAGER)
+                .destinataireResponsableId(responsableId)
+                .targetId(targetId)
+                .estLue(false)
+                .dateCreation(LocalDateTime.now())
+                .build());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<Notification> getNotificationsResponsable(Long responsableId) {
+        return notificationRepository.findByDestinataireResponsableIdOrderByDateCreationDesc(responsableId);
+    }
+
+    @Override
+    @Transactional
+    public void marquerCommeLuePourResponsable(Long notificationId, Long responsableId) {
+        Notification notification = notificationRepository.findById(notificationId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Notification introuvable."));
+        // Un responsable ne peut marquer que ses propres notifications
+        if (!responsableId.equals(notification.getDestinataireResponsableId())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Cette notification ne vous est pas destinée.");
+        }
+        notification.setEstLue(true);
+        notificationRepository.save(notification);
+    }
+
+    @Override
+    @Transactional
+    public void marquerToutesCommeLuesPourResponsable(Long responsableId) {
+        List<Notification> notifications = notificationRepository.findByDestinataireResponsableIdAndEstLueFalse(responsableId);
+        notifications.forEach(notification -> notification.setEstLue(true));
+        notificationRepository.saveAll(notifications);
     }
 
     @Override

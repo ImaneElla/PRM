@@ -122,6 +122,8 @@ public class NotificationEcheanceService {
             if (joursRestants >= 0 && joursRestants <= 7 && etapeEnvoyee < 3 && !salarie.isBloqueEmails()) {
                 log.info("[J-7] Envoi alerte critique (CC RH) pour {}", salarie.getMatricule());
                 if (mailService.sendRappelJ7(periode)) {
+                    notifierResponsable(periode, "Urgent : évaluation de " + nomSalarie(periode),
+                            "L'évaluation de " + nomSalarie(periode) + " doit être remplie avant le " + dateFr(periode) + ".");
                     periode.setStatut(StatutPeriode.EN_RETARD_CRITIQUE);
                     periode.setDateDernierRappel(dateReference);
                     alertesJ7++;
@@ -140,6 +142,8 @@ public class NotificationEcheanceService {
             else if (joursRestants > 7 && joursRestants <= 14 && etapeEnvoyee < 2 && !salarie.isBloqueEmails()) {
                 log.info("[J-14] Envoi email relance pour {}", salarie.getMatricule());
                 if (mailService.sendRappelJ14(periode)) {
+                    notifierResponsable(periode, "Rappel : évaluation de " + nomSalarie(periode),
+                            "L'évaluation de " + nomSalarie(periode) + " n'est pas encore complétée. Échéance : " + dateFr(periode) + ".");
                     periode.setStatut(StatutPeriode.EN_RELANCE);
                     periode.setDateDernierRappel(dateReference);
                     rappelsJ14++;
@@ -151,6 +155,8 @@ public class NotificationEcheanceService {
             else if (joursRestants > 14 && joursRestants <= 21 && etapeEnvoyee < 1 && !salarie.isBloqueEmails()) {
                 log.info("[J-21] Envoi email initial pour {}", salarie.getMatricule());
                 if (mailService.sendRappelJ21(periode)) {
+                    notifierResponsable(periode, "Évaluation à réaliser : " + nomSalarie(periode),
+                            "L'évaluation de la période d'essai de " + nomSalarie(periode) + " est à réaliser avant le " + dateFr(periode) + ".");
                     periode.setStatut(StatutPeriode.EN_COURS);
                     periode.setDateDernierRappel(dateReference);
                     rappelsJ21++;
@@ -235,8 +241,10 @@ public class NotificationEcheanceService {
             salarieRepository.save(salarie);
 
             if (avecEmails) {
-                // Alerte retard envoyée au Manager ET à l'Admin RH (CC)
+                // Alerte retard envoyée au Manager ET à l'Admin RH (CC), et notification dans l'espace du responsable concerné
                 mailService.sendAlerteRetard(periode, retard);
+                notifierResponsable(periode, "Retard : évaluation de " + nomSalarie(periode),
+                        "Échéance dépassée de " + retard + " jour(s). Le dossier est en attente de décision RH.");
             }
             notificationService.creerAlerte(
                     "BLOCAGE J+1 : Dossier " + salarie.getMatricule(),
@@ -247,6 +255,19 @@ public class NotificationEcheanceService {
         }
         periodeRepository.save(periode);
         return nouveau;
+    }
+
+    private void notifierResponsable(PeriodeEvaluation periode, String titre, String message) {
+        if (periode.getResponsable() == null) return;
+        notificationService.creerAlerteResponsable(titre, message, periode.getResponsable().getId(), periode.getSalarie().getId());
+    }
+
+    private static String nomSalarie(PeriodeEvaluation periode) {
+        return periode.getSalarie().getFirstName() + " " + periode.getSalarie().getLastName();
+    }
+
+    private static String dateFr(PeriodeEvaluation periode) {
+        return periode.getDateEcheance().format(java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy"));
     }
 
     /* Dernière étape de rappel déjà envoyée : 0 = aucune, 1 = J-21, 2 = J-14, 3 = J-7. */

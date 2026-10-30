@@ -49,4 +49,8 @@ public class Notification {
 
     @Column(name = "target_id")
     private Long targetId;
+
+    // Renseigné pour une notification destinée à un seul responsable (cibleRole = MANAGER) ; null pour les notifications RH
+    @Column(name = "destinataire_responsable_id")
+    private Long destinataireResponsableId;
 }

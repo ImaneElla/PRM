@@ -18,6 +18,7 @@ public class SchemaUpdater implements CommandLineRunner {
             "ALTER TABLE users ADD COLUMN IF NOT EXISTS enabled BOOLEAN NOT NULL DEFAULT TRUE",
             "ALTER TABLE users ADD COLUMN IF NOT EXISTS reset_token_hash VARCHAR(255)",
             "ALTER TABLE users ADD COLUMN IF NOT EXISTS reset_token_expiry TIMESTAMP",
+            "ALTER TABLE notifications ADD COLUMN IF NOT EXISTS destinataire_responsable_id BIGINT",
     };
 
     private final JdbcTemplate jdbcTemplate;
