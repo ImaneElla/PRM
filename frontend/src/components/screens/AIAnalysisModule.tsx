@@ -49,7 +49,7 @@ export interface SyntheseTableauRow {
 }
 
 export interface AIAnalysisResult {
-  // 'ia' = généré par le modèle ; 'modele-local' = texte générique (pas de clé OpenAI, ou appel en échec)
+  // 'ia' = généré par le modèle ; 'modele-local' = texte générique (Ollama indisponible ou réponse invalide)
   source?: 'ia' | 'modele-local';
   moyenneGlobale?: number;
   pointsForts: string[];
@@ -278,7 +278,7 @@ export default function AIAnalysisModule({ data, onApplyToForm, onSaveAnalysis }
 
         {analysis?.source === 'modele-local' && (
           <div role="note" className="mt-5 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-[11px] text-amber-800">
-            Analyse indicative : l&apos;IA n&apos;a pas pu être utilisée (clé non configurée ou service indisponible).
+            Analyse indicative : l&apos;IA n&apos;a pas pu être utilisée (Ollama est arrêté ou le modèle Llama n'est pas installé).
             Seules la moyenne et le classement des notes sont calculés ; les recommandations sont des modèles génériques.
           </div>
         )}

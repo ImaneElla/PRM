@@ -142,7 +142,7 @@ Ouvrir `http://localhost:3000`.
   | `FRONTEND_URL` | URL publique du frontend, utilisée dans les liens des e-mails. |
 
 - **Modèles d'e-mail RH** (rappels J-21, J-14, J-7 et retard) : l'Admin RH les modifie dans *Paramètres → Relances*. Les changements sont enregistrés en base et utilisés dès le prochain envoi ; « Rétablir le texte par défaut » restaure le texte d'origine. Champs disponibles : `{nom_manager}`, `{nom_salarie}`, `{date_echeance}`, `{date_limite}`, `{lien_evaluation}`, `{lien_application}`, `{identifiant}`, `{jours_retard}` (un champ inconnu est refusé). Le mot de passe n'est jamais envoyé par e-mail.
-- Variables du frontend : `NEXT_PUBLIC_SUPPORT_NOM`, `NEXT_PUBLIC_SUPPORT_ROLE` et `NEXT_PUBLIC_SUPPORT_EMAIL` définissent le contact affiché dans l'écran Aide. `OPENAI_API_KEY` (et `OPENAI_MODEL`) active l'analyse IA ; sans clé, l'analyse est signalée comme « indicative » (modèle générique). La route d'analyse exige d'être connecté.
+- Variables du frontend : `NEXT_PUBLIC_SUPPORT_NOM`, `NEXT_PUBLIC_SUPPORT_ROLE` et `NEXT_PUBLIC_SUPPORT_EMAIL` définissent le contact affiché dans l'écran Aide. L'analyse IA utilise Ollama (Llama) en local : `OLLAMA_URL` (défaut `http://localhost:11434`) et `OLLAMA_MODEL` (défaut `llama3.2`) ; si Ollama est arrêté, l'analyse est signalée comme « indicative » (modèle générique). La route d'analyse exige d'être connecté.
 - Variable du frontend : `NEXT_PUBLIC_ENABLE_DEMO=true` affiche le bouton « Mode Démo » (données fictives de présentation). Ne la définissez jamais en production.
 - L'API Spring configure CORS pour le frontend local `http://localhost:3000` et `http://127.0.0.1:3000`. Pour un autre domaine, configurez explicitement une origine de confiance côté backend.
 

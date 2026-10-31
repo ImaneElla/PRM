@@ -117,178 +117,139 @@ export async function POST(request: Request) {
     ? parseFloat((validNotes.reduce((a, b) => a + b, 0) / validNotes.length).toFixed(2))
     : 3.5;
 
-  const apiKey = process.env.OPENAI_API_KEY;
+  // Analyse par un modèle Llama exécuté en local avec Ollama (aucune donnée ne quitte le serveur)
+  const ollamaUrl = (process.env.OLLAMA_URL || 'http://localhost:11434').replace(/\/$/, '');
+  const modele = process.env.OLLAMA_MODEL || 'llama3.2';
 
-  // Si pas de clé OpenAI, génération d'analyse intelligente locale sans erreur
-  if (!apiKey) {
-    // Top notes (points forts)
-    const sortedCriteres = [...evaluation.criteres]
-      .filter(c => !c.note.includes('Non évalué'))
-      .sort((a, b) => (parseFloat(b.note) || 0) - (parseFloat(a.note) || 0));
-
-    const topPoints = sortedCriteres.slice(0, 3).map(c => `${c.nom} (${c.note}) - Démontre une solide régularité opérationnelle.`);
-    const bottomPoints = [...sortedCriteres].reverse().slice(0, 3).map(c => `${c.nom} (${c.note}) - Nécessite un suivi et un accompagnement ciblé.`);
-
-    const fallbackResult = {
-      source: 'modele-local', // pas d'IA : texte générique, seule la moyenne et le classement des notes sont calculés
-      moyenneGlobale: moyenneCalculee,
-      pointsForts: topPoints.length > 0 ? topPoints : [
-        "Compréhension des objectifs et intégration professionnelle",
-        "Rigueur dans l'exécution et respect des délais",
-        "Sens de la collaboration et esprit d'équipe"
-      ],
-      axesAmelioration: bottomPoints.length > 0 ? bottomPoints : [
-        "Développement de l'autonomie sur les dossiers complexes",
-        "Communication proactive lors d'imprévus ou de blocages",
-        "Approfondissement de la maîtrise des outils métier"
-      ],
-      planAccompagnement: [
-        {
-          action: "Point d'étape bimensuel avec le manager",
-          objectif: "Suivre la montée en compétences et lever les blocages",
-          echeance: "1 mois",
-          moyens: "Entretien N+1 (30 min tous les 15j)"
-        },
-        {
-          action: "Formation pratique et partage de bonnes pratiques",
-          objectif: "Consolider la méthodologie et l'autonomie",
-          echeance: "2 mois",
-          moyens: "Binôme tuteur / module e-learning"
-        },
-        {
-          action: "Bilan intermédiaire de progression",
-          objectif: "Mesurer l'atteinte des jalons fixés",
-          echeance: "3 mois",
-          moyens: "Fiche d'objectifs réajustée"
-        }
-      ],
-      syntheseTableau: [
-        {
-          salarie: evaluation.salarieName || 'Collaborateur',
-          point1_pointsForts: topPoints[0] || 'Maîtrise technique et sens du service',
-          point2_axesAmelioration: bottomPoints[0] || 'Autonomie et gestion des priorités',
-          point3_syntheseMoyenne: `Moyenne : ${moyenneCalculee}/5 — Profil en progression favorable avec potentiel confirmé.`
-        }
-      ]
-    };
-
-    return NextResponse.json(fallbackResult);
-  }
-
-  // Appel OpenAI avec JSON Schema complet
   try {
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    const response = await fetch(`${ollamaUrl}/api/chat`, {
       method: 'POST',
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        'Content-Type': 'application/json',
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        model: process.env.OPENAI_MODEL || 'gpt-4o-mini',
+        model: modele,
+        stream: false,
+        // Ollama contraint la réponse à ce schéma JSON
+        format: SCHEMA_ANALYSE,
+        options: { temperature: 0.2, num_predict: 1400 },
         messages: [
           {
             role: 'system',
             content:
-              'Tu es un expert RH de haut niveau. À partir des 24 critères d\'évaluation et commentaires remplis par le responsable, tu dois obligatoirement générer :\n1. L\'identification précise des 3 points forts clés.\n2. La détection des 3 axes d\'amélioration prioritaires et la moyenne globale calculée.\n3. Une synthèse générale concise présentée sous forme de tableau (1 Salarié, 1 Points forts, 2 Axes d\'amélioration, 3 Synthèse globale).\n4. Un plan d\'accompagnement en 3 actions concrètes.\nRéponds en français avec un ton professionnel et constructif.',
+              "Tu es un expert RH de haut niveau. À partir des 24 critères d'évaluation et commentaires remplis par le responsable, tu dois obligatoirement générer :\n1. L'identification précise des 3 points forts clés.\n2. La détection des 3 axes d'amélioration prioritaires et la moyenne globale calculée.\n3. Une synthèse générale concise présentée sous forme de tableau (1 Salarié, 1 Points forts, 2 Axes d'amélioration, 3 Synthèse globale).\n4. Un plan d'accompagnement en 3 actions concrètes.\nRéponds uniquement en français avec un ton professionnel et constructif, au format JSON demandé.",
           },
           { role: 'user', content: JSON.stringify({ ...evaluation, moyenneCalculee }) },
         ],
-        response_format: {
-          type: 'json_schema',
-          json_schema: {
-            name: 'evaluation_analysis',
-            strict: true,
-            schema: {
-              type: 'object',
-              properties: {
-                moyenneGlobale: { type: 'number' },
-                pointsForts: { type: 'array', items: { type: 'string' } },
-                axesAmelioration: { type: 'array', items: { type: 'string' } },
-                planAccompagnement: {
-                  type: 'array',
-                  items: {
-                    type: 'object',
-                    properties: {
-                      action: { type: 'string' },
-                      objectif: { type: 'string' },
-                      echeance: { type: 'string' },
-                      moyens: { type: 'string' },
-                    },
-                    required: ['action', 'objectif', 'echeance', 'moyens'],
-                    additionalProperties: false,
-                  },
-                },
-                syntheseTableau: {
-                  type: 'array',
-                  items: {
-                    type: 'object',
-                    properties: {
-                      salarie: { type: 'string' },
-                      point1_pointsForts: { type: 'string' },
-                      point2_axesAmelioration: { type: 'string' },
-                      point3_syntheseMoyenne: { type: 'string' },
-                    },
-                    required: ['salarie', 'point1_pointsForts', 'point2_axesAmelioration', 'point3_syntheseMoyenne'],
-                    additionalProperties: false,
-                  },
-                },
-              },
-              required: ['moyenneGlobale', 'pointsForts', 'axesAmelioration', 'planAccompagnement', 'syntheseTableau'],
-              additionalProperties: false,
-            },
-          },
-        },
-        max_tokens: 1400,
-        temperature: 0.2,
       }),
-      signal: AbortSignal.timeout(30_000),
+      // Délai d'attente : 2 s par défaut, modifiable avec OLLAMA_TIMEOUT_MS
+      signal: AbortSignal.timeout(Number(process.env.OLLAMA_TIMEOUT_MS) || 2000),
     });
 
     if (!response.ok) {
-      throw new Error('Erreur API OpenAI');
+      throw new Error(`Ollama a répondu ${response.status}`);
     }
 
     const completion = await response.json();
-    const content = completion.choices?.[0]?.message?.content;
-    const parsed = JSON.parse(content);
-    return NextResponse.json({ ...parsed, source: 'ia', moyenneGlobale: parsed.moyenneGlobale || moyenneCalculee });
-  } catch {
-    // L'appel à l'IA a échoué : résultat générique, signalé comme tel à l'utilisateur
+    const parsed = JSON.parse(completion.message?.content ?? '');
+    if (!Array.isArray(parsed.pointsForts) || !Array.isArray(parsed.axesAmelioration)) {
+      throw new Error('Réponse du modèle incomplète');
+    }
     return NextResponse.json({
-      source: 'modele-local',
+      ...parsed,
+      source: 'ia',
+      // La moyenne reste celle calculée à partir des notes, pas celle « estimée » par le modèle
       moyenneGlobale: moyenneCalculee,
-      pointsForts: [
-        "Compréhension des objectifs et intégration professionnelle",
-        "Rigueur dans l'exécution et respect des délais",
-        "Sens de la collaboration et esprit d'équipe"
-      ],
-      axesAmelioration: [
-        "Développement de l'autonomie sur les dossiers complexes",
-        "Communication proactive lors d'imprévus ou de blocages",
-        "Approfondissement de la maîtrise des outils métier"
-      ],
-      planAccompagnement: [
-        {
-          action: "Point d'étape bimensuel avec le manager",
-          objectif: "Suivre la montée en compétences et lever les blocages",
-          echeance: "1 mois",
-          moyens: "Entretien N+1 (30 min tous les 15j)"
-        },
-        {
-          action: "Formation pratique et partage de bonnes pratiques",
-          objectif: "Consolider la méthodologie et l'autonomie",
-          echeance: "2 mois",
-          moyens: "Binôme tuteur / module e-learning"
-        }
-      ],
-      syntheseTableau: [
-        {
-          salarie: evaluation.salarieName || 'Collaborateur',
-          point1_pointsForts: "Rigueur technique, bonne adhésion aux processus et implication dans l'équipe.",
-          point2_axesAmelioration: "Renforcer l'autonomie décisionnelle et optimiser la gestion du temps.",
-          point3_syntheseMoyenne: `Moyenne générale : ${moyenneCalculee}/5 — Bilan positif avec perspectives de confirmation.`
-        }
-      ]
     });
+  } catch {
+    // Ollama arrêté, modèle absent ou réponse invalide : résultat générique, signalé comme tel
+    return NextResponse.json(modeleLocal(evaluation, moyenneCalculee));
   }
+}
+
+const SCHEMA_ANALYSE = {
+  type: 'object',
+  properties: {
+    moyenneGlobale: { type: 'number' },
+    pointsForts: { type: 'array', items: { type: 'string' } },
+    axesAmelioration: { type: 'array', items: { type: 'string' } },
+    planAccompagnement: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          action: { type: 'string' },
+          objectif: { type: 'string' },
+          echeance: { type: 'string' },
+          moyens: { type: 'string' },
+        },
+        required: ['action', 'objectif', 'echeance', 'moyens'],
+      },
+    },
+    syntheseTableau: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          salarie: { type: 'string' },
+          point1_pointsForts: { type: 'string' },
+          point2_axesAmelioration: { type: 'string' },
+          point3_syntheseMoyenne: { type: 'string' },
+        },
+        required: ['salarie', 'point1_pointsForts', 'point2_axesAmelioration', 'point3_syntheseMoyenne'],
+      },
+    },
+  },
+  required: ['moyenneGlobale', 'pointsForts', 'axesAmelioration', 'planAccompagnement', 'syntheseTableau'],
+};
+
+// Texte générique quand le modèle n'est pas disponible : seuls la moyenne et le classement des notes sont calculés
+function modeleLocal(evaluation: EvaluationInput, moyenneCalculee: number) {
+  const sortedCriteres = [...evaluation.criteres]
+    .filter(c => !c.note.includes('Non évalué'))
+    .sort((a, b) => (parseFloat(b.note) || 0) - (parseFloat(a.note) || 0));
+
+  const topPoints = sortedCriteres.slice(0, 3).map(c => `${c.nom} (${c.note}) - Démontre une solide régularité opérationnelle.`);
+  const bottomPoints = [...sortedCriteres].reverse().slice(0, 3).map(c => `${c.nom} (${c.note}) - Nécessite un suivi et un accompagnement ciblé.`);
+
+  return {
+    source: 'modele-local',
+    moyenneGlobale: moyenneCalculee,
+    pointsForts: topPoints.length > 0 ? topPoints : [
+      "Compréhension des objectifs et intégration professionnelle",
+      "Rigueur dans l'exécution et respect des délais",
+      "Sens de la collaboration et esprit d'équipe"
+    ],
+    axesAmelioration: bottomPoints.length > 0 ? bottomPoints : [
+      "Développement de l'autonomie sur les dossiers complexes",
+      "Communication proactive lors d'imprévus ou de blocages",
+      "Approfondissement de la maîtrise des outils métier"
+    ],
+    planAccompagnement: [
+      {
+        action: "Point d'étape bimensuel avec le manager",
+        objectif: "Suivre la montée en compétences et lever les blocages",
+        echeance: "1 mois",
+        moyens: "Entretien N+1 (30 min tous les 15j)"
+      },
+      {
+        action: "Formation pratique et partage de bonnes pratiques",
+        objectif: "Consolider la méthodologie et l'autonomie",
+        echeance: "2 mois",
+        moyens: "Binôme tuteur / module e-learning"
+      },
+      {
+        action: "Bilan intermédiaire de progression",
+        objectif: "Mesurer l'atteinte des jalons fixés",
+        echeance: "3 mois",
+        moyens: "Fiche d'objectifs réajustée"
+      }
+    ],
+    syntheseTableau: [
+      {
+        salarie: evaluation.salarieName || 'Collaborateur',
+        point1_pointsForts: topPoints[0] || 'Maîtrise technique et sens du service',
+        point2_axesAmelioration: bottomPoints[0] || 'Autonomie et gestion des priorités',
+        point3_syntheseMoyenne: `Moyenne : ${moyenneCalculee}/5 — Profil en progression favorable avec potentiel confirmé.`
+      }
+    ]
+  };
 }
