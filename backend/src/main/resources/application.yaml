@@ -34,6 +34,9 @@ application:
   frontend-url: ${FRONTEND_URL:http://localhost:3000}
   # Expéditeur des e-mails si aucun n'est configuré dans les paramètres : MAIL_SENDER, sinon le compte SMTP
   mail-sender: ${MAIL_SENDER:${MAIL_USERNAME:}}
+  outils:
+    # OUTIL TEMPORAIRE (bouton « vider les données » dans Paramètres) : désactivé par défaut, ne jamais l'activer en production
+    reinitialisation-donnees: ${ALLOW_DATA_RESET:false}
   security:
     jwt:
       # Obligatoire en production (32 caractères minimum). Sans valeur, un secret aléatoire est généré à chaque démarrage.

@@ -43,6 +43,35 @@ import { computeDecisionTotals, isRupture, isTitularise } from '@/lib/decisionSt
 // =========================================================================
 // 1. DASHBOARD RH / ADMIN (SUPERVISION GLOBALE DE TOUT LE SYSTÈME)
 // =========================================================================
+// Statut d'une période : libellé court et pastille sobre (point de couleur + tons doux)
+function statutPeriodeAffichage(statut: string): { libelle: string; classe: string; point: string } {
+  switch (statut) {
+    case 'EN_ATTENTE_DECISION_RH':
+      return { libelle: 'Décision RH', point: 'bg-rose-500',
+        classe: 'border-rose-200 bg-rose-50 text-rose-700 dark:border-rose-900/60 dark:bg-rose-950/40 dark:text-rose-300' };
+    case 'EN_RETARD':
+    case 'EN_RETARD_CRITIQUE':
+      return { libelle: 'En retard', point: 'bg-red-500',
+        classe: 'border-red-200 bg-red-50 text-red-700 dark:border-red-900/60 dark:bg-red-950/40 dark:text-red-300' };
+    case 'EN_RELANCE':
+      return { libelle: 'En relance', point: 'bg-amber-500',
+        classe: 'border-amber-200 bg-amber-50 text-amber-800 dark:border-amber-900/60 dark:bg-amber-950/40 dark:text-amber-300' };
+    case 'EN_COURS':
+    case 'PLANIFIEE':
+      return { libelle: 'En cours', point: 'bg-blue-500',
+        classe: 'border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-900/60 dark:bg-blue-950/40 dark:text-blue-300' };
+    case 'RENOUVELEE':
+      return { libelle: 'Renouvellement', point: 'bg-orange-500',
+        classe: 'border-orange-200 bg-orange-50 text-orange-700 dark:border-orange-900/60 dark:bg-orange-950/40 dark:text-orange-300' };
+    case 'CONFIRMEE':
+      return { libelle: 'Titularisation', point: 'bg-emerald-500',
+        classe: 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900/60 dark:bg-emerald-950/40 dark:text-emerald-300' };
+    default:
+      return { libelle: statut, point: 'bg-zinc-400',
+        classe: 'border-zinc-200 bg-zinc-100 text-zinc-700 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300' };
+  }
+}
+
 function DashboardRH() {
   const {
     salaries,
@@ -624,7 +653,7 @@ function DashboardRH() {
                 </div>
               ) : (
                 periodesAffichees.map((periode) => {
-                  const isOverdue = periode.statut === 'EN_RETARD';
+                  const isOverdue = periode.statut === 'EN_RETARD' || periode.statut === 'EN_ATTENTE_DECISION_RH';
                   const is3M = periode.typePeriode === 'TROIS_MOIS';
 
                   return (
@@ -650,7 +679,7 @@ function DashboardRH() {
                               variant="secondary"
                               className="text-[10px] hidden sm:inline-flex font-normal"
                             >
-                              {is3M ? 'Période 1 (3 mois)' : 'Période 2 (6 mois)'}
+                              {is3M ? '3 mois' : '6 mois'}
                             </Badge>
                           </div>
                           <p className="text-[11px] text-muted-foreground mt-0.5 truncate">
@@ -661,33 +690,17 @@ function DashboardRH() {
 
                       {/* STATUT + BOUTON DE CONSULTATION À DEUX CHOIX */}
                       <div className="flex items-center gap-2 shrink-0">
-                        <span
-                          className={`text-[11px] font-semibold px-2.5 py-1 rounded-full border shadow-2xs whitespace-nowrap ${
-                            periode.statut === 'EN_ATTENTE_DECISION_RH'
-                              ? 'bg-rose-100 text-rose-800 border-rose-300 font-bold dark:bg-rose-950/60 dark:text-rose-200 dark:border-rose-800 animate-pulse'
-                              : periode.statut === 'EN_RELANCE'
-                              ? 'bg-amber-50 text-amber-800 border-amber-300 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-900/60'
-                              : periode.statut === 'EN_RETARD'
-                              ? 'bg-red-50 text-red-700 border-red-200 dark:bg-red-950/40 dark:text-red-300 dark:border-red-900/60'
-                              : periode.statut === 'EN_COURS'
-                              ? 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/40 dark:text-blue-300 dark:border-blue-900/60'
-                              : 'bg-zinc-100 text-zinc-700 border-zinc-200 dark:bg-zinc-800 dark:text-zinc-300 dark:border-zinc-700'
-                          }`}
-                        >
-                          {periode.statut === 'EN_ATTENTE_DECISION_RH'
-                            ? 'EN ATTENTE DÉCISION RH'
-                            : periode.statut === 'EN_RELANCE'
-                            ? 'En relance'
-                            : periode.statut === 'EN_RETARD'
-                            ? 'En retard'
-                            : periode.statut === 'EN_COURS' || periode.statut === 'PLANIFIEE'
-                            ? 'En cours'
-                            : (periode.statut as string) === 'RENOUVELEE'
-                            ? 'Renouvellement'
-                            : (periode.statut as string) === 'CONFIRMEE'
-                            ? 'Validation / Titularisation'
-                            : periode.statut}
-                        </span>
+                        {(() => {
+                          const cfg = statutPeriodeAffichage(periode.statut as string);
+                          return (
+                            <span
+                              className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-semibold whitespace-nowrap ${cfg.classe}`}
+                            >
+                              <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${cfg.point}`} />
+                              {cfg.libelle}
+                            </span>
+                          );
+                        })()}
 
                         {(periode.statut === 'COMPLETEE' ||
                           periode.statut === 'VALIDEE_RH' ||

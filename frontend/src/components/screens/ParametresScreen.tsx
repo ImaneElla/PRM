@@ -5,6 +5,7 @@ import { useApp } from '../../context/AppContext';
 import { getAuthUser, updateAuthUser } from '../../services/authService';
 import { modeleEmailService, ModeleEmail } from '../../services/modeleEmailService';
 import { getSocieteLabel, SOCIETES } from '@/lib/societe';
+import OutilViderDonnees from '../OutilViderDonnees';
 
 // Description des champs insérables dans un modèle (remplacés automatiquement à l'envoi)
 const DESCRIPTION_CHAMPS: Record<string, string> = {
@@ -691,6 +692,8 @@ export default function ParametresScreen() {
           )}
         </div>
       </form>
+
+      {isRH && <OutilViderDonnees />}
     </div>
   );
 }
