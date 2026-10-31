@@ -89,7 +89,7 @@ export default function BilanAnalyseIA({ periode, titre, evaluation }: BilanAnal
           <div className="flex items-center justify-between gap-3 pt-4">
             <div className="text-sm">
               <span className={etiquette}>Statut de l&apos;analyse : </span>
-              <span className="font-semibold text-[#1D1D1F]">{analyse ? 'Analyse générée' : 'Non générée'}</span>
+              <span className={`font-semibold ${analyse ? 'text-[#1F9D55]' : 'text-[#D97706]'}`}>{analyse ? 'Analyse générée' : 'Non générée'}</span>
             </div>
             <ConsulterBouton periode={periode} cible="analyse" size="sm" />
           </div>

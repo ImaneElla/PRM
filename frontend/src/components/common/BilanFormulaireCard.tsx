@@ -131,7 +131,7 @@ export default function BilanFormulaireCard({ titre, nom, echeance, evaluation, 
       <div className="flex items-center justify-between gap-3 pt-4">
         <div className="text-sm">
           <span className={etiquette}>Décision proposée : </span>
-          <span className="font-semibold text-[#1D1D1F]">{decision}</span>
+          <span className={`font-semibold ${decision === "Arrêt de contrat" ? "text-[#E4002B]" : "text-[#1F9D55]"}`}>{decision}</span>
         </div>
         {footer ?? (
           <button

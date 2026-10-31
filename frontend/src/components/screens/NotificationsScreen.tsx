@@ -122,11 +122,13 @@ export default function NotificationsScreen() {
             </button>
           </div>
 
-          {unreadCount > 0 && (
+          {/* Toujours visible : grisé quand tout est déjà lu */}
+          {(
             <button
               type="button"
               onClick={markAllNotificationsAsRead}
-              className="flex items-center gap-1.5 rounded-[10px] border border-[#E8E8ED] bg-[#F5F5F7] px-3 py-1.5 text-xs font-medium text-[#E4002B] transition-all duration-200 hover:bg-[#FFF0F3] cursor-pointer"
+              disabled={unreadCount === 0}
+              className="flex items-center gap-1.5 rounded-[10px] border border-[#E8E8ED] bg-[#F5F5F7] px-3 py-1.5 text-xs font-medium text-[#E4002B] transition-all duration-200 hover:bg-[#FFF0F3] cursor-pointer disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-[#F5F5F7]"
             >
               <CheckCheck className="w-3.5 h-3.5" />
               <span>Tout marquer comme lu</span>

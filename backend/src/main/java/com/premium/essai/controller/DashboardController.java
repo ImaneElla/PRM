@@ -142,6 +142,8 @@ public class DashboardController {
                 .heureEnvoi(histo.getHeureEnvoi())
                 .statut(histo.getStatut())
                 .batchCron(histo.isBatchCron())
+                .contenuCorps(histo.getContenuCorps())
+                .lienSecurise(histo.getLienSecurise())
                 .build();
     }
 }

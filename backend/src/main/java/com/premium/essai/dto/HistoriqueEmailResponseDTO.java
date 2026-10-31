@@ -22,4 +22,7 @@ public class HistoriqueEmailResponseDTO {
     private LocalTime heureEnvoi;
     private String statut;
     private boolean batchCron;
+    // Texte complet du message (aperçu dans « Audit des E-mails ») et lien associé
+    private String contenuCorps;
+    private String lienSecurise;
 }

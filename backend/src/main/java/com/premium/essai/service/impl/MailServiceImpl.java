@@ -18,11 +18,13 @@ import com.premium.essai.service.MailService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import jakarta.mail.internet.MimeMessage;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.util.HtmlUtils;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -333,6 +335,68 @@ public class MailServiceImpl implements MailService {
         return dispatchEmail(user.getEmail(), "[Groupe Premium] Invitation administrateur RH", corps);
     }
 
+    private static final String SITE_WEB = "www.groupe-premium.com";
+    private static final String LOGO = "mail/logo-groupe-premium.png";
+    private static final String LOGO_CID = "logoGroupePremium";
+    private static final java.util.regex.Pattern URL = java.util.regex.Pattern.compile("(https?://[^\\s<]+)");
+
+    // Corps HTML : logo en en-tête, texte du message (liens cliquables), site du groupe en pied de page
+    // Même présentation que l'aperçu de l'application : en-tête (logo + service), titre, message, bloc portail, pied de page.
+    // Adaptée aux téléphones : la largeur suit l'écran et les blocs s'empilent (media query + tableaux fluides).
+    private String enHtml(String objet, String texte) {
+        String echappe = HtmlUtils.htmlEscape(texte);
+        String avecLiens = URL.matcher(echappe).replaceAll(m -> {
+            String lien = m.group(1);
+            return "<a href=\"" + lien + "\" style=\"color:#E4002B;word-break:break-all\">" + lien + "</a>";
+        });
+        String paragraphes = avecLiens.replace("\r", "").replace("\n", "<br>");
+        // Le bouton ouvre l'application : l'adresse du réseau local si elle est configurée (un téléphone n'atteint pas « localhost »)
+        String base = (frontendUrlReseau != null && !frontendUrlReseau.isBlank())
+                ? frontendUrlReseau.replaceAll("/+$", "") : frontendUrl;
+        String portail = base + "/connexion";
+        return "<!DOCTYPE html><html lang=\"fr\"><head><meta charset=\"UTF-8\">"
+                + "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">"
+                + "<style>"
+                + "@media only screen and (max-width:480px){"
+                + ".wrap{padding:12px 8px!important}"
+                + ".card{padding:18px!important;border-radius:12px!important}"
+                + ".cell{display:block!important;width:100%!important;text-align:left!important;box-sizing:border-box}"
+                + ".cell-droite{padding-top:10px!important}"
+                + ".titre{font-size:16px!important}"
+                + ".btn{display:block!important;text-align:center!important}"
+                + ".logo{width:130px!important}"
+                + "}"
+                + "</style></head>"
+                + "<body style=\"margin:0;padding:0;background:#F5F5F7\">"
+                + "<div class=\"wrap\" style=\"background:#F5F5F7;padding:24px 12px;font-family:Arial,Helvetica,sans-serif\">"
+                + "<div class=\"card\" style=\"max-width:620px;margin:0 auto;background:#FFFFFF;border:1px solid #E8E8ED;border-radius:16px;padding:28px;color:#1D1D1F\">"
+                // En-tête : logo à gauche, service à droite (empilés sur téléphone)
+                + "<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"border-bottom:1px solid #E8E8ED\"><tr>"
+                + "<td class=\"cell\" align=\"left\" style=\"padding-bottom:16px\"><img class=\"logo\" src=\"cid:" + LOGO_CID + "\" alt=\"Groupe Premium\" width=\"150\" style=\"display:block;border:0;height:auto;max-width:100%\"></td>"
+                + "<td class=\"cell cell-droite\" align=\"right\" style=\"padding-bottom:16px;font-size:11px;color:#6E6E73;line-height:1.5\">"
+                + "<span style=\"font-family:Consolas,monospace;letter-spacing:.5px\">SYSTÈME RH AUTOMATISÉ</span><br>"
+                + "<strong style=\"color:#E4002B;font-size:12px\">Direction des Ressources Humaines</strong></td>"
+                + "</tr></table>"
+                // Titre
+                + "<h2 class=\"titre\" style=\"font-size:18px;line-height:1.35;margin:22px 0 14px;padding-bottom:10px;border-bottom:1px solid #F0F0F3;color:#1D1D1F\">"
+                + HtmlUtils.htmlEscape(objet) + "</h2>"
+                // Message
+                + "<div style=\"font-size:14px;line-height:1.65;color:#3A3A3C\">" + paragraphes + "</div>"
+                // Bloc portail : texte puis bouton (empilés sur téléphone)
+                + "<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"margin:26px 0;background:#F5F5F7;border:1px solid #E8E8ED;border-radius:12px\"><tr>"
+                + "<td class=\"cell\" style=\"padding:16px\"><strong style=\"font-size:14px\">Action requise sur le portail RH</strong><br>"
+                + "<span style=\"font-size:12px;color:#6E6E73\">Accès sécurisé SSO Groupe Premium</span></td>"
+                + "<td class=\"cell\" align=\"right\" style=\"padding:16px\"><a class=\"btn\" href=\"" + portail + "\" style=\"display:inline-block;background:#E4002B;color:#FFFFFF;text-decoration:none;font-weight:bold;font-size:14px;padding:12px 22px;border-radius:10px\">Accéder au portail &rarr;</a></td>"
+                + "</tr></table>"
+                // Pied de page
+                + "<div style=\"border-top:1px solid #E8E8ED;padding-top:16px;text-align:center;font-size:12px;color:#6E6E73;line-height:1.6\">"
+                + "<strong style=\"color:#3A3A3C\">GROUPE PREMIUM &bull; Direction des Ressources Humaines</strong><br>"
+                + "Ce message a été généré automatiquement par le gestionnaire des périodes d'essai Groupe Premium.<br>"
+                + "<span style=\"font-size:11px\">Conformément aux dispositions du Code du Travail et à la convention collective applicable.</span><br>"
+                + "<a href=\"https://" + SITE_WEB + "\" style=\"color:#E4002B;text-decoration:none\">" + SITE_WEB + "</a>"
+                + "</div></div></div></body></html>";
+    }
+
     private boolean dispatchEmail(String to, String subject, String body) {
         return dispatchEmail(to, null, subject, body);
     }
@@ -350,7 +414,12 @@ public class MailServiceImpl implements MailService {
                 helper.setCc(cc);
             }
             helper.setSubject(subject);
-            helper.setText(body, false);
+            // Version texte (clients sans HTML) et version HTML avec le logo et le site du groupe
+            helper.setText(body + "\n\nGroupe Premium\n" + SITE_WEB, enHtml(subject, body));
+            ClassPathResource logo = new ClassPathResource(LOGO);
+            if (logo.exists()) {
+                helper.addInline(LOGO_CID, logo, "image/png");
+            }
 
             mailSender.send(message);
             log.info("E-mail envoyé avec succès à : {} (CC: {})", to, cc);
