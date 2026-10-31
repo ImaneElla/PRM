@@ -210,4 +210,22 @@ class NotificationsDestinatairesTest {
         mockMvc.perform(get("/api/notifications").header("Authorization", jeton(emailAdminA)))
                 .andExpect(jsonPath("$[?(@.titre =~ /DÉCISION RH requise : Dossier.*/)]").isNotEmpty());
     }
+
+    @Test
+    void uneRuptureDecideeParLaRhPrevientLeResponsableEtTousLesAdmins() {
+        evaluationService.priseDeDecisionDirecteRH(periode.getId(),
+                com.premium.essai.dto.DecisionRHRequestDTO.builder()
+                        .decisionFinale(com.premium.essai.model.enums.DecisionFinal.RUPTURE)
+                        .commentaireRH("Période d'essai non concluante").build());
+
+        List<HistoriqueEmail> decisions = emails().stream()
+                .filter(e -> e.getObjet().startsWith("Décision RH : arrêt du contrat")).toList();
+
+        assertEquals(3, decisions.size(), "un e-mail pour le responsable et un par administrateur actif");
+        assertTrue(decisions.stream().anyMatch(e -> e.getRoleDestinataire() == RoleDestinataire.RESPONSABLE));
+        assertTrue(decisions.stream().anyMatch(e -> e.getDestinataire().equals(emailAdminA)));
+        assertTrue(decisions.stream().anyMatch(e -> e.getDestinataire().equals(emailAdminB)));
+        assertTrue(decisions.stream().noneMatch(e -> e.getDestinataire().equals(emailAdminInactif)), "pas l'admin désactivé");
+        assertTrue(decisions.get(0).getContenuCorps().contains("Période d'essai non concluante"), decisions.get(0).getContenuCorps());
+    }
 }

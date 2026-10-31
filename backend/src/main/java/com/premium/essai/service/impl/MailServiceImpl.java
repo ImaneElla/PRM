@@ -190,7 +190,39 @@ public class MailServiceImpl implements MailService {
     @Override
     @Transactional
     public void sendConfirmationRH(PeriodeEvaluation periode, String decision) {
-        log.info("Notification de décision RH ({}) enregistrée pour le salarié ID : {}", decision, periode.getSalarie().getId());
+        log.info("Décision RH ({}) pour le salarié ID : {} : e-mails au responsable et aux administrateurs", decision, periode.getSalarie().getId());
+        String nomSalarie = periode.getSalarie().getFirstName() + " " + periode.getSalarie().getLastName();
+        String matricule = periode.getSalarie().getMatricule();
+        String motif = periode.getMotifDecision() != null ? periode.getMotifDecision().trim() : "";
+        String objet = "Décision RH : " + decision + " — " + nomSalarie;
+        String lien = plusLienReseau(frontendUrl + "/connexion", "/connexion");
+
+        // Le responsable concerné
+        if (periode.getResponsable() != null && periode.getResponsable().getEmail() != null) {
+            String nomResponsable = periode.getResponsable().getFirstName() + " " + periode.getResponsable().getLastName();
+            String corps = "Bonjour " + nomResponsable + ",\n\n"
+                    + "La Direction des Ressources Humaines a enregistré la décision suivante concernant " + nomSalarie
+                    + " (" + matricule + ") : " + decision + ".\n"
+                    + (motif.isEmpty() ? "" : "\nMotif : " + motif + "\n")
+                    + "\nConsultez le dossier : " + lien + "\n\nService des Ressources Humaines";
+            boolean succes = dispatchEmail(periode.getResponsable().getEmail(), objet, corps);
+            logHistorique(periode, periode.getResponsable().getEmail(), nomResponsable, RoleDestinataire.RESPONSABLE,
+                    objet, TypeEmail.CONFIRMATION_RH, corps, frontendUrl + "/connexion", succes);
+        }
+
+        // Tous les administrateurs actifs
+        for (User admin : userRepository.findByRole(UserRole.ADMIN_RH).stream().filter(User::isEnabled).toList()) {
+            String nomAdmin = ((admin.getPrenom() != null ? admin.getPrenom() : "") + " "
+                    + (admin.getNom() != null ? admin.getNom() : "")).trim();
+            if (nomAdmin.isEmpty()) nomAdmin = "Administrateur";
+            String corps = "Bonjour " + nomAdmin + ",\n\n"
+                    + "Une décision RH a été enregistrée concernant " + nomSalarie + " (" + matricule + ") : " + decision + ".\n"
+                    + (motif.isEmpty() ? "" : "\nMotif : " + motif + "\n")
+                    + "\nConsultez le dossier : " + lien + "\n\nService des Ressources Humaines";
+            boolean succes = dispatchEmail(admin.getEmail(), objet, corps);
+            logHistorique(periode, admin.getEmail(), nomAdmin, RoleDestinataire.ADMIN,
+                    objet, TypeEmail.CONFIRMATION_RH, corps, frontendUrl + "/connexion", succes);
+        }
     }
 
     private boolean sendEmailAvecTemplate(PeriodeEvaluation periode, TypeEmail typeEmail) {

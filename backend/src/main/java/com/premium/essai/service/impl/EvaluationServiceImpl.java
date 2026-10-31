@@ -242,6 +242,15 @@ public class EvaluationServiceImpl implements EvaluationService {
                 periode.getResponsable() != null ? periode.getResponsable().getId() : null,
                 salarie.getId()
         );
+
+        // Notification dans l'espace RH, puis e-mail au responsable concerné et à tous les administrateurs
+        notificationService.creerAlerte(
+                "Décision RH : " + salarie.getFirstName() + " " + salarie.getLastName(),
+                "Décision enregistrée : " + decision + ".",
+                CibleRole.ALL_RH,
+                salarie.getId()
+        );
+        mailService.sendConfirmationRH(periode, decision);
     }
 
     private PeriodeEvaluation creerPeriodeSuivante(Salarie salarie) {
