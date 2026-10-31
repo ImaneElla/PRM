@@ -1,14 +1,16 @@
-# Premium Essai Manager
+# Premium Ressources Humaines Manager
 
+<!-- markdownlint-disable MD033 -->
 <p>
-  <img src="https://skillicons.dev/icons?i=nextjs,react,ts,tailwind,spring,java,postgres,bun&perline=8" alt="Technologies utilisées" />
+  <img src="./assets/technologies.svg" width="780" alt="Technologies utilisées" />
 </p>
+<!-- markdownlint-enable MD033 -->
 
 Application de suivi des périodes d'essai du Groupe Premium. Elle aide les équipes RH et les responsables à planifier les bilans, enregistrer les évaluations et suivre les décisions concernant les collaborateurs.
 
 ## Sommaire
 
-- [Premium Essai Manager](#premium-essai-manager)
+- [Premium Ressources Humaines Manager](#premium-ressources-humaines-manager)
   - [Sommaire](#sommaire)
   - [Fonctionnalités](#fonctionnalités)
   - [Parcours d'évaluation](#parcours-dévaluation)
@@ -79,11 +81,18 @@ flowchart LR
 
 | Couche | Technologies |
 | --- | --- |
-| Interface | Next.js App Router, React, TypeScript, Tailwind CSS |
-| API métier | Java 17, Spring Boot 3, Spring Data JPA |
-| Base de données | PostgreSQL |
-| Tests backend | Maven, JUnit, H2 |
-| Gestionnaire frontend | Bun (version indiquée dans `frontend/package.json`) |
+| Interface | Next.js 16 (App Router), React 19, TypeScript 5, Tailwind CSS 4, Lucide React (icônes), Recharts (graphiques), class-variance-authority, clsx, tailwind-merge |
+| Gestionnaire frontend | Bun (version indiquée dans `frontend/package.json`), ESLint |
+| API métier | Java 17, Spring Boot 3.1, Spring Web (REST), Spring Data JPA / Hibernate, Bean Validation |
+| Sécurité | Spring Security, JWT stateless (jjwt), CORS configurable |
+| Base de données | PostgreSQL, Flyway (migrations), mise à jour de schéma au démarrage |
+| E-mails | Spring Mail (JavaMailSender, SMTP), e-mails HTML responsives avec logo intégré (CID) |
+| Rappels | Tâches planifiées Spring (`@Scheduled`), fuseau Africa/Casablanca |
+| Documents | Apache POI (modèles et imports Excel), OpenPDF (export PDF) |
+| Intelligence artificielle | Ollama en local (modèle Llama, API `/api/chat`), route Next.js réservée à l'Admin RH |
+| Documentation API | springdoc-openapi (Swagger UI), Thunder Client pour les tests manuels |
+| Utilitaires backend | Lombok, MapStruct, dotenv-java (`backend/.env`) |
+| Tests backend | Maven, JUnit 5, Spring Boot Test, Spring Security Test, H2 |
 
 Le frontend utilise `AppContext` pour l'état partagé. Les appels métier déjà reliés au backend passent par des services dans `frontend/src/services/`. PostgreSQL est la source persistante des opérations effectivement envoyées à Spring Boot.
 

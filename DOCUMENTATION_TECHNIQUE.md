@@ -8,8 +8,26 @@
 ![Java 17](https://img.shields.io/badge/Java-17-ED8B00?logo=openjdk&logoColor=white)
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-4169E1?logo=postgresql&logoColor=white)
 ![Bun](https://img.shields.io/badge/Bun-000000?logo=bun&logoColor=white)
+![HTML5](https://img.shields.io/badge/HTML5-E34F26?logo=html5&logoColor=white)
+![Hibernate](https://img.shields.io/badge/Hibernate-59666C?logo=hibernate&logoColor=white)
+![Spring Security](https://img.shields.io/badge/Spring_Security-6DB33F?logo=springsecurity&logoColor=white)
+![JWT](https://img.shields.io/badge/JWT-000000?logo=jsonwebtokens&logoColor=white)
+![Maven](https://img.shields.io/badge/Maven-C71A36?logo=apachemaven&logoColor=white)
+![Flyway](https://img.shields.io/badge/Flyway-CC0200?logo=flyway&logoColor=white)
+![Gmail SMTP](https://img.shields.io/badge/Gmail_SMTP-EA4335?logo=gmail&logoColor=white)
+![Apache POI](https://img.shields.io/badge/Apache_POI-D22128?logo=apache&logoColor=white)
+![Swagger](https://img.shields.io/badge/Swagger-85EA2D?logo=swagger&logoColor=black)
+![JUnit 5](https://img.shields.io/badge/JUnit_5-25A162?logo=junit5&logoColor=white)
+![H2](https://img.shields.io/badge/H2-1021FF?logoColor=white)
+![Ollama](https://img.shields.io/badge/Ollama-000000?logo=ollama&logoColor=white)
+![Llama 3.2](https://img.shields.io/badge/Llama_3.2-0467DF?logo=meta&logoColor=white)
+![Git](https://img.shields.io/badge/Git-F05032?logo=git&logoColor=white)
+![GitHub](https://img.shields.io/badge/GitHub-181717?logo=github&logoColor=white)
+![VS Code](https://img.shields.io/badge/VS_Code-007ACC?logo=visualstudiocode&logoColor=white)
+![Windows](https://img.shields.io/badge/Windows-0078D6?logo=windows&logoColor=white)
+![PowerShell](https://img.shields.io/badge/PowerShell-5391FE?logo=powershell&logoColor=white)
 
-Documentation technique de **Premium Essai Manager**, l'application de suivi RH des périodes d'essai du Groupe Premium.
+Documentation technique de **Premium Ressources Humaines Manager**, l'application de suivi RH des périodes d'essai du Groupe Premium.
 
 ## Sommaire
 
@@ -26,7 +44,7 @@ Documentation technique de **Premium Essai Manager**, l'application de suivi RH 
 
 ## 1. Objectif et périmètre
 
-**Premium Essai Manager** accompagne le suivi RH des périodes d'essai. Le frontend est une application Next.js ; l'API métier est un service Spring Boot qui utilise PostgreSQL avec Spring Data JPA.
+**Premium Ressources Humaines Manager** accompagne le suivi RH des périodes d'essai. Le frontend est une application Next.js ; l'API métier est un service Spring Boot qui utilise PostgreSQL avec Spring Data JPA.
 
 Les flux salariés, évaluations et notifications documentés ci-dessous sont reliés au backend. L'application contient également des vues de démonstration et des données conservées uniquement dans le navigateur.
 
