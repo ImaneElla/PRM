@@ -54,7 +54,7 @@ function ConnexionForm() {
       onSubmit: async (values) => {
         const user = await login({ email: values.email.trim(), password: values.password });
         // Première connexion avec le mot de passe temporaire : changement obligatoire
-        router.replace(user.mustChangePassword ? "/changer-mot-de-passe" : "/dashboard");
+        router.replace(user.mustChangePassword ? "/changer-mot-de-passe" : "/");
       },
     });
 

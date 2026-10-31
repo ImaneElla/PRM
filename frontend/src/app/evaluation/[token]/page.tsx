@@ -17,7 +17,7 @@ export default function LienEvaluationPage() {
     } catch {
       // Stockage indisponible : l'utilisateur retrouvera sa liste d'évaluations à faire
     }
-    router.replace("/dashboard");
+    router.replace("/");
   }, [params.token, router]);
 
   return null;

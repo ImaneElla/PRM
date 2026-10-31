@@ -75,7 +75,7 @@ async function utilisateurConnecte(request: Request): Promise<boolean> {
   const authorization = request.headers.get('authorization');
   if (!authorization?.startsWith('Bearer ')) return false;
   try {
-    const reponse = await fetch(`${BACKEND_API_URL}/parametres`, {
+    const reponse = await fetch(`${BACKEND_API_URL}/admins`, {
       headers: { Authorization: authorization },
       cache: 'no-store',
     });
@@ -87,7 +87,7 @@ async function utilisateurConnecte(request: Request): Promise<boolean> {
 
 export async function POST(request: Request) {
   if (!(await utilisateurConnecte(request))) {
-    return NextResponse.json({ error: 'Connexion requise pour lancer une analyse.' }, { status: 401 });
+    return NextResponse.json({ error: 'Analyse IA réservée aux administrateurs.' }, { status: 403 });
   }
 
   let body: any;

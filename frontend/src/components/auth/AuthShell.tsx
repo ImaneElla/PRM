@@ -84,7 +84,7 @@ export default function AuthShell({ children, showBack = false, redirectIfAuthen
 
   useEffect(() => {
     if (redirectIfAuthenticated && isAuthenticated()) {
-      router.replace("/dashboard");
+      router.replace("/");
     }
   }, [router, redirectIfAuthenticated]);
 

@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import DashboardApp from "@/components/DashboardApp";
 import { AUTH_CHANGED_EVENT, getAuthUser, isAuthenticated } from "@/services/authService";
 
-export default function DashboardPage() {
+export default function ApplicationPage() {
   const router = useRouter();
   const authorized = useSyncExternalStore(
     (onStoreChange) => {

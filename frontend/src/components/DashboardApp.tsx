@@ -22,6 +22,7 @@ import NotificationsScreen from '@/components/screens/NotificationsScreen';
 import ParametresScreen from '@/components/screens/ParametresScreen';
 import AideScreen from '@/components/screens/AideScreen';
 import AIAnalysisScreen from '@/components/screens/AIAnalysisScreen';
+import { getAuthUser } from '@/services/authService';
 import ArchivesScreen from '@/components/screens/Archivesscreen';
 
 export default function DashboardApp() {
@@ -71,7 +72,7 @@ export default function DashboardApp() {
       case 'notifications':
         return <NotificationsScreen />;
       case 'analyse-ia':
-        return <AIAnalysisScreen />;
+        return getAuthUser()?.role === 'ADMIN_RH' ? <AIAnalysisScreen /> : <DashboardResponsable />;
       case 'archive':
         return <ArchivesScreen />;
       case 'moteur':

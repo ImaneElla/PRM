@@ -26,6 +26,8 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
 import ConsulterBouton from '@/components/common/ConsulterBouton';
+import BilanAnalyseIA from './BilanAnalyseIA';
+import BilanFormulaireCard from '@/components/common/BilanFormulaireCard';
 import { getSocieteLabel, SOCIETES } from '@/lib/societe';
 
 const DECISION_OPTIONS: {
@@ -619,7 +621,8 @@ export default function DetailSalarieScreen() {
             }
 
             return (
-              <Card key={p.id} className="p-5 space-y-4">
+              <div key={p.id} className="space-y-4">
+              <Card className="p-5 space-y-4">
                 <div className="flex items-center justify-between pb-3 border-b border-[#E8E8ED]/70">
                   <div className="flex items-center gap-2.5">
                     <span className="w-8 h-8 rounded-xl bg-primary/10 text-primary flex items-center justify-center font-bold text-xs shadow-2xs">
@@ -663,63 +666,14 @@ export default function DetailSalarieScreen() {
                 </div>
 
                 {showEval && evalDetail ? (
-                  <div className="space-y-3 text-xs">
-                    <div className="flex items-center justify-between p-3 rounded-xl bg-secondary/40 border border-[#E8E8ED]">
-                      <span className="text-foreground font-medium">Note Globale d&apos;Évaluation :</span>
-                      <div className="flex items-center gap-2">
-                        <div className="flex items-center gap-0.5">
-                          {[1, 2, 3, 4, 5].map((i) => (
-                            <Star
-                              key={i}
-                              className={`w-4 h-4 ${
-                                noteAffichee !== null && i <= Math.round(noteAffichee)
-                                  ? 'text-apple-orange fill-apple-orange'
-                                  : 'text-[#D2D2D7]'
-                              }`}
-                              strokeWidth={1.5}
-                            />
-                          ))}
-                        </div>
-                        <span className="font-bold text-foreground text-sm">
-                          {noteAffichee ?? '—'} / 5
-                        </span>
-                      </div>
-                    </div>
-
-                    <div>
-                      <p className="text-muted-foreground font-semibold mb-1">Avis du Responsable ({p.responsableNom}) :</p>
-                      <p className="p-3 rounded-xl bg-secondary/30 text-foreground/90 text-xs italic border border-[#E8E8ED]/60">
-                        {evalDetail.avisResponsable?.trim()
-                          ? `« ${evalDetail.avisResponsable} »`
-                          : 'Aucun avis saisi.'}
-                      </p>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-2 text-[11px]">
-                      <div className="p-2.5 rounded-xl bg-secondary/30 border border-[#E8E8ED]/50">
-                        <span className="text-muted-foreground block">Compétences métiers</span>
-                        <strong className="text-foreground">{evalDetail.competencesTechniques} / 5</strong>
-                      </div>
-                      <div className="p-2.5 rounded-xl bg-secondary/30 border border-[#E8E8ED]/50">
-                        <span className="text-muted-foreground block">Intégration d&apos;équipe</span>
-                        <strong className="text-foreground">{evalDetail.integrationEquipe} / 5</strong>
-                      </div>
-                    </div>
-
-                    <div className="pt-2 flex items-center justify-between border-t border-[#E8E8ED]/60 text-xs">
-                      <div>
-                        <span className="text-muted-foreground">Décision proposée : </span>
-                        <strong
-                          className={`font-semibold ${
-                            (p.decisionFinale || '') === 'RUPTURE' ? 'text-destructive' : 'text-apple-green'
-                          }`}
-                        >
-                          {p.decisionFinale || 'VALIDATION'}
-                        </strong>
-                      </div>
-                      <ConsulterBouton periode={p} size="sm" />
-                    </div>
-                  </div>
+                  <BilanFormulaireCard
+                    embedded
+                    titre={is3M ? 'Bilan 3 mois' : 'Bilan 6 mois'}
+                    nom={nomComplet}
+                    echeance={p.dateEcheance}
+                    evaluation={evalDetail}
+                    footer={<ConsulterBouton periode={p} size="sm" />}
+                  />
                 ) : (
                   <div className="space-y-3 text-xs">
                     <p className="text-muted-foreground text-xs">
@@ -759,6 +713,16 @@ export default function DetailSalarieScreen() {
                   </div>
                 )}
               </Card>
+
+                {/* L'analyse IA est réservée aux administrateurs */}
+                {isRH && (
+                  <BilanAnalyseIA
+                    periode={p}
+                    titre={is3M ? 'Bilan 3 mois' : 'Bilan 6 mois'}
+                    evaluation={evalDetail}
+                  />
+                )}
+              </div>
             );
           })}
         </div>

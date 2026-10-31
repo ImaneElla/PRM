@@ -48,7 +48,7 @@ export default function ChangerMotDePassePage() {
       validate,
       onSubmit: async (values) => {
         await changerMotDePasse(values.actuel, values.nouveau);
-        router.replace("/dashboard");
+        router.replace("/");
       },
     });
 

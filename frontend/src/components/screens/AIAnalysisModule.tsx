@@ -170,9 +170,46 @@ export default function AIAnalysisModule({ data, onApplyToForm, onSaveAnalysis }
       <div className="pointer-events-none absolute -bottom-32 -left-32 w-80 h-80 bg-rose-500/10 rounded-full blur-3xl" />
 
       {/* EN-TÊTE ULTRA-SOIGNÉ */}
-      <div className="relative p-6 border-b border-[#E8E8ED] bg-[#F5F5F7]/40">
+      <div className="relative p-5 border-b border-[#E8E8ED] bg-[#F5F5F7]/40">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-5">
           <div className="space-y-1.5">
+            {/* Salarié concerné par l'analyse */}
+            <div className="flex w-full items-center gap-3 pb-2">
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#E4002B] to-[#B80022] text-base font-bold text-white shadow-md shadow-[#E4002B]/20">
+                {(data.salarieName || '?').trim().charAt(0).toUpperCase()}
+              </span>
+              <div className="min-w-0">
+                <p className="truncate text-lg font-semibold leading-tight text-[#1D1D1F]">{data.salarieName || 'Salarié'}</p>
+                {data.poste && <p className="truncate text-xs text-[#6E6E73]">{data.poste}</p>}
+              </div>
+
+              {/* Note en face du nom */}
+              {analysis && analysis.moyenneGlobale !== undefined && (
+                <div className="ml-3 flex shrink-0 items-center gap-2">
+                  <div className="flex items-baseline gap-1 rounded-xl border border-[#E8E8ED] bg-white px-3 py-1.5">
+                    <Calculator className="mr-1 h-4 w-4 self-center text-[#E4002B]" />
+                    <span className="text-xl font-bold leading-none text-[#1D1D1F]">{analysis.moyenneGlobale.toFixed(1)}</span>
+                    <span className="text-xs text-[#86868B]">/ 5.0</span>
+                  </div>
+                  {onApplyToForm && (
+                    <button
+                      onClick={handleApply}
+                      className="inline-flex cursor-pointer items-center gap-1.5 rounded-xl bg-[#1D1D1F] px-3 py-2 text-xs font-semibold text-white hover:bg-black"
+                    >
+                      {applied ? <Check className="h-3.5 w-3.5 text-emerald-400" /> : <FileCheck2 className="h-3.5 w-3.5" />}
+                      {applied ? 'Transféré !' : 'Insérer dans le formulaire'}
+                    </button>
+                  )}
+                  <button
+                    onClick={handleCopySummary}
+                    title="Copier la synthèse"
+                    className="cursor-pointer rounded-xl border border-[#E8E8ED] bg-white p-2 text-[#6E6E73] hover:text-[#1D1D1F]"
+                  >
+                    {copied ? <Check className="h-4 w-4 text-emerald-600" /> : <Copy className="h-4 w-4" />}
+                  </button>
+                </div>
+              )}
+            </div>
             <div className="flex flex-wrap items-center gap-2">
               <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#E4002B] text-white font-semibold text-xs uppercase tracking-wider">
                 <Brain className="w-3.5 h-3.5" />
@@ -193,9 +230,11 @@ export default function AIAnalysisModule({ data, onApplyToForm, onSaveAnalysis }
               <Sparkles className="w-5 h-5 text-[#E4002B]" />
             </h3>
 
+            {!analysis && (
             <p className="text-xs text-[#6E6E73] max-w-2xl leading-relaxed">
               Exploite les notes et appréciations du responsable pour dégager : <strong className="text-[#1D1D1F]">1. Points forts</strong>, <strong className="text-[#1D1D1F]">2. Axes d&apos;amélioration &amp; calcul de la moyenne</strong>, et <strong className="text-[#1D1D1F]">3. Synthèse managériale en tableau</strong>.
             </p>
+            )}
           </div>
 
           {/* Action Button & Completion Tracker */}
@@ -230,7 +269,7 @@ export default function AIAnalysisModule({ data, onApplyToForm, onSaveAnalysis }
               ) : (
                 <>
                   <Sparkles className="w-4 h-4 text-rose-200 group-hover:rotate-12 transition-transform" />
-                  <span>{analysis ? "Régénérer l'Analyse" : "Lancer l'Analyse IA (24 critères)"}</span>
+                  <span>{analysis ? "Régénérer" : "Lancer l'Analyse IA"}</span>
                 </>
               )}
             </button>
@@ -246,21 +285,21 @@ export default function AIAnalysisModule({ data, onApplyToForm, onSaveAnalysis }
 
         {/* NAVIGATION PAR ONGLETS (QUAND ANALYSE PRÊTE) */}
         {analysis && (
-          <div className="flex items-center gap-2 mt-5 pt-4 border-t border-[#E8E8ED]">
+          <div className="flex items-stretch gap-2 mt-5 pt-4 border-t border-[#E8E8ED]">
             <button
               onClick={() => setActiveTab('ALL')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+              className={`flex-1 justify-center px-3 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
                 activeTab === 'ALL'
                   ? 'bg-[#1D1D1F] text-white shadow-[0_2px_8px_rgba(0,0,0,0.12)]'
                   : 'bg-[#F5F5F7] text-[#6E6E73] hover:text-[#1D1D1F]'
               }`}
             >
               <Layers className="w-3.5 h-3.5" />
-              Vue d&apos;Ensemble (3 Piliers)
+              Vue d&apos;Ensemble
             </button>
             <button
               onClick={() => setActiveTab('TABLE')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+              className={`flex-1 justify-center px-3 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
                 activeTab === 'TABLE'
                   ? 'bg-[#1D1D1F] text-white shadow-[0_2px_8px_rgba(0,0,0,0.12)]'
                   : 'bg-[#F5F5F7] text-[#6E6E73] hover:text-[#1D1D1F]'
@@ -272,7 +311,7 @@ export default function AIAnalysisModule({ data, onApplyToForm, onSaveAnalysis }
             {analysis.planAccompagnement && analysis.planAccompagnement.length > 0 && (
               <button
                 onClick={() => setActiveTab('PLAN')}
-                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                className={`flex-1 justify-center px-3 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
                   activeTab === 'PLAN'
                     ? 'bg-[#1D1D1F] text-white shadow-[0_2px_8px_rgba(0,0,0,0.12)]'
                     : 'bg-[#F5F5F7] text-[#6E6E73] hover:text-[#1D1D1F]'
@@ -368,77 +407,7 @@ export default function AIAnalysisModule({ data, onApplyToForm, onSaveAnalysis }
 
       {/* RÉSULTATS DE L'ANALYSE */}
       {!loading && analysis && (
-        <div className="p-6 space-y-6">
-          {/* BANDEAU COCKPIT SUPÉRIEUR */}
-          <div className="p-5 rounded-[20px] bg-[#1D1D1F] text-white shadow-[0_8px_32px_rgba(29,29,31,0.40)] border border-[#333] flex flex-col md:flex-row md:items-center justify-between gap-5">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-[14px] bg-gradient-to-tr from-[#E4002B] to-[#FF2D55] text-white flex items-center justify-center font-bold text-lg shadow-md shrink-0">
-                {(data.salarieName || "S")[0].toUpperCase()}
-              </div>
-
-              <div>
-                <div className="flex items-center gap-2 flex-wrap">
-                  <h4 className="text-base font-bold text-white tracking-tight">
-                    {data.salarieName || "Collaborateur"}
-                  </h4>
-                  <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-white/10 text-white/80 border border-white/10">
-                    {data.poste || "Poste évalué"}
-                  </span>
-                </div>
-                <p className="text-xs text-white/50 mt-0.5">
-                  Synthèse 24 critères • {scoreBadge.label}
-                </p>
-              </div>
-            </div>
-
-            {/* Note & Actions */}
-            <div className="flex flex-wrap items-center gap-3">
-              {analysis.moyenneGlobale !== undefined && (
-                <div className="flex items-center gap-3 px-4 py-2 rounded-xl bg-white/5 border border-white/10">
-                  <Calculator className="w-5 h-5 text-red-400" />
-                  <div>
-                    <span className="text-[10px] uppercase font-semibold text-white/50 block tracking-wider">
-                      Moyenne Calculée
-                    </span>
-                    <div className="flex items-baseline gap-1">
-                      <span className="text-xl font-black text-white">
-                        {analysis.moyenneGlobale.toFixed(1)}
-                      </span>
-                      <span className="text-xs text-white/50">/ 5.0</span>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {onApplyToForm && (
-                <button
-                  onClick={handleApply}
-                  className="inline-flex items-center gap-2 px-4 py-2.5 rounded-[10px] bg-white text-[#1D1D1F] hover:bg-[#F5F5F7] font-semibold text-xs shadow-md active:scale-[0.98] transition-all duration-200 cursor-pointer"
-                >
-                  {applied ? (
-                    <>
-                      <Check className="w-4 h-4 text-emerald-600" />
-                      <span>Transféré au formulaire !</span>
-                    </>
-                  ) : (
-                    <>
-                      <FileCheck2 className="w-4 h-4 text-[#E4002B]" />
-                      <span>Insérer dans le Formulaire</span>
-                    </>
-                  )}
-                </button>
-              )}
-
-              <button
-                onClick={handleCopySummary}
-                className="p-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white border border-white/10 transition-colors cursor-pointer"
-                title="Copier la synthèse"
-              >
-                {copied ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
-              </button>
-            </div>
-          </div>
-
+        <div className="p-5 space-y-5">
           {/* CONTENU SELON L'ONGLET ACTIF */}
           {(activeTab === 'ALL' || activeTab === 'TABLE') && (
             <div className="space-y-6">
@@ -516,7 +485,7 @@ export default function AIAnalysisModule({ data, onApplyToForm, onSaveAnalysis }
               )}
 
               {/* BLOC 3 : SYNTHÈSE GÉNÉRALE EN TABLEAU */}
-              <div className="space-y-3 pt-2">
+              <div style={activeTab !== 'TABLE' ? { display: 'none' } : undefined} className="space-y-3 pt-2">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <div className="p-1.5 rounded-[8px] bg-[#E4002B] text-white">
@@ -622,7 +591,7 @@ export default function AIAnalysisModule({ data, onApplyToForm, onSaveAnalysis }
           )}
 
           {/* PLAN D'ACCOMPAGNEMENT */}
-          {(activeTab === 'ALL' || activeTab === 'PLAN') && analysis.planAccompagnement && analysis.planAccompagnement.length > 0 && (
+          {activeTab === 'PLAN' && analysis.planAccompagnement && analysis.planAccompagnement.length > 0 && (
             <div className="space-y-3 pt-3">
               <div className="flex items-center gap-2">
                 <div className="p-1.5 rounded-[8px] bg-[#1D1D1F] text-white">

@@ -25,6 +25,7 @@ import { evaluationService, RecommandationBackend } from '../services/evaluation
 import { notificationService } from '../services/notificationService';
 import { parametreService } from '../services/parametreService';
 import { AUTH_CHANGED_EVENT, getAuthUser } from '../services/authService';
+import { cheminDeLEcran, ecranDuChemin } from '../lib/navigation';
 
 import {
   initialUsers,
@@ -238,19 +239,48 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   // Après un rechargement de la page, on revient sur le même écran (et le même dossier ouvert)
   const navigationRestauree = React.useRef(false);
   React.useEffect(() => {
+    // L'adresse fait foi : /periodes ouvre les périodes ; la racine « / » est le tableau de bord
+    const ecranUrl = ecranDuChemin(window.location.pathname);
+    const ecran: ScreenId = ecranUrl ?? 'dashboard';
+    let ids = { salarieId: 0, periodeId: 0, responsableId: 0 };
     try {
       const brut = sessionStorage.getItem('gp_navigation');
       const sauvegarde = brut ? JSON.parse(brut) : null;
-      if (sauvegarde && sauvegarde.role === getAuthUser()?.role) {
-        if (sauvegarde.screen) setCurrentScreen(sauvegarde.screen);
-        if (sauvegarde.salarieId) setSelectedSalarieId(sauvegarde.salarieId);
-        if (sauvegarde.periodeId) setSelectedPeriodeId(sauvegarde.periodeId);
-        if (sauvegarde.responsableId) setSelectedResponsableId(sauvegarde.responsableId);
+      if (sauvegarde && sauvegarde.role === getAuthUser()?.role && sauvegarde.screen === ecran) {
+        ids = {
+          salarieId: sauvegarde.salarieId ?? 0,
+          periodeId: sauvegarde.periodeId ?? 0,
+          responsableId: sauvegarde.responsableId ?? 0,
+        };
       }
     } catch {
-      // stockage indisponible : on reste sur l'écran par défaut
+      // stockage indisponible : on garde seulement l'écran de l'adresse
     }
+    setCurrentScreen(ecran);
+    if (ids.salarieId) setSelectedSalarieId(ids.salarieId);
+    if (ids.periodeId) setSelectedPeriodeId(ids.periodeId);
+    if (ids.responsableId) setSelectedResponsableId(ids.responsableId);
     navigationRestauree.current = true;
+
+    // Bouton « Retour » / « Suivant » du navigateur : on revient à la section visitée, sans quitter l'application
+    try {
+      // Pages hors application (connexion, mot de passe…) : l'adresse n'est pas modifiée
+      if (ecranUrl) {
+        window.history.replaceState({ ...window.history.state, gp: true, screen: ecran, ...ids }, '', cheminDeLEcran(ecran));
+      }
+    } catch {
+      // historique indisponible
+    }
+    const surRetour = (event: PopStateEvent) => {
+      const etat = event.state;
+      if (!etat?.gp || !etat.screen) return;
+      setCurrentScreen(etat.screen);
+      if (etat.salarieId) setSelectedSalarieId(etat.salarieId);
+      if (etat.periodeId) setSelectedPeriodeId(etat.periodeId);
+      if (etat.responsableId) setSelectedResponsableId(etat.responsableId);
+    };
+    window.addEventListener('popstate', surRetour);
+    return () => window.removeEventListener('popstate', surRetour);
   }, []);
   React.useEffect(() => {
     if (!navigationRestauree.current) return;
@@ -695,6 +725,19 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     if (params?.responsableId) setSelectedResponsableId(params.responsableId);
     if (params?.emailId) { const email = emails.find(e => e.id === params.emailId); if (email) setSelectedEmail(email); }
     if (screen === 'ajouter-salarie') { setCurrentScreen('salaries'); setIsAddSalarieModalOpen(true); return; }
+    // Une entrée d'historique par écran : le bouton « Retour » du navigateur ramène à la section précédente
+    try {
+      window.history.pushState({
+        ...window.history.state,
+        gp: true,
+        screen,
+        salarieId: params?.salarieId ?? selectedSalarieId,
+        periodeId: params?.periodeId ?? selectedPeriodeId,
+        responsableId: params?.responsableId ?? selectedResponsableId,
+      }, '', cheminDeLEcran(screen));
+    } catch {
+      // historique indisponible
+    }
     setCurrentScreen(screen);
   };
 
