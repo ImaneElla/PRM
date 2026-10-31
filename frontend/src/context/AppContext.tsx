@@ -518,6 +518,44 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       donneesAnalyseAI: aiAnalysesMap[e.periodeId] || e.donneesAnalyseAI
     }));
   }, [isDemoMode, realEvaluations, aiAnalysesMap]);
+  // Les évaluations déjà remplies sont relues dans la base : le formulaire est donc déjà en place
+  // (et consultable) même si le responsable l'a rempli depuis un autre navigateur ou un autre poste.
+  const evaluationsChargees = React.useRef<Set<number>>(new Set());
+  React.useEffect(() => {
+    if (!isLoaded || isDemoMode) return;
+    const STATUTS_REMPLIS = ['COMPLETEE', 'VALIDE', 'VALIDEE_RH', 'RENOUVELEE', 'CONFIRMEE', 'RUPTURE', 'ROMPU'];
+    const aCharger = realPeriodesList.filter(p =>
+      STATUTS_REMPLIS.includes(p.statut as string) &&
+      !evaluationsChargees.current.has(p.id) &&
+      !realEvaluations.some(e => e.periodeId === p.id));
+    aCharger.forEach(async (periode) => {
+      evaluationsChargees.current.add(periode.id);
+      const distante = await evaluationService.getEvaluationByPeriodeId(periode.id);
+      if (!distante) return;
+      let formulaire: any;
+      try { formulaire = distante.jsonReponsesCriteres ? JSON.parse(distante.jsonReponsesCriteres) : undefined; } catch { /* JSON illisible */ }
+      const recommandation: EvaluationDetail['recommandation'] =
+        distante.recommandationEvaluateur === 'RUPTURE_CONTRAT' ? 'RUPTURE'
+          : distante.recommandationEvaluateur === 'PROLONGATION_ESSAI' ? 'RENOUVELLEMENT'
+            : 'CONFIRMATION';
+      const evaluation: EvaluationDetail = {
+        id: distante.id,
+        periodeId: periode.id,
+        competencesTechniques: distante.noteCompetencesPro,
+        integrationEquipe: distante.noteAptitudesPerso,
+        autonomieRigueur: distante.noteQSE,
+        atteinteObjectifs: distante.noteGlobale,
+        pointsForts: distante.pointsForts || '',
+        axesAmelioration: distante.axesAmelioration || '',
+        avisResponsable: distante.commentairesEvaluateur || '',
+        recommandation,
+        dateEvaluation: (distante.dateSoumission || '').split('T')[0],
+        signatureResponsable: 'Validé',
+        donneesFormulaireComplet: formulaire && Object.keys(formulaire).length > 0 ? formulaire : undefined,
+      };
+      setRealEvaluations(prev => prev.some(e => e.periodeId === periode.id) ? prev : [evaluation, ...prev]);
+    });
+  }, [isLoaded, isDemoMode, realPeriodesList, realEvaluations]);
   const emails = useMemo(() => isDemoMode ? initialEmails : realEmails, [isDemoMode, realEmails]);
   const notifications = useMemo(() => isDemoMode ? initialNotifications : realNotifications, [isDemoMode, realNotifications]);
 

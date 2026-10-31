@@ -85,9 +85,9 @@ function ConnexionForm() {
         )}
       </div>
 
-      <form onSubmit={handleSubmit} noValidate className="mt-4 space-y-4">
+      <form onSubmit={handleSubmit} noValidate suppressHydrationWarning className="mt-4 space-y-4">
         <FormField id="email" icon={<MailIcon />} error={errors.email}>
-          <input
+          <input suppressHydrationWarning
             id="email"
             type="email"
             autoComplete="email"
@@ -112,7 +112,7 @@ function ConnexionForm() {
             </button>
           }
         >
-          <input
+          <input suppressHydrationWarning
             id="password"
             type={showPassword ? "text" : "password"}
             autoComplete="current-password"
@@ -124,7 +124,7 @@ function ConnexionForm() {
 
         <div className="flex items-center justify-between text-sm">
           <label className="flex cursor-pointer items-center gap-2 text-slate-600">
-            <input
+            <input suppressHydrationWarning
               type="checkbox"
               checked={remember}
               onChange={(e) => setRemember(e.target.checked)}

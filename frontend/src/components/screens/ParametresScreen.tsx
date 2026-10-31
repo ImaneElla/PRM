@@ -250,7 +250,7 @@ export default function ParametresScreen() {
   };
 
   const emailsValid = isRH
-    ? isEmail(compte.emailExpediteur) && isEmail(profil.email)
+    ? isEmail(profil.email)
     : isEmail(respProfil.email);
 
   const handleSaveAll = async (e: React.FormEvent) => {
@@ -276,7 +276,7 @@ export default function ParametresScreen() {
           return;
         }
       }
-      updateParametres({ compte, profil });
+      updateParametres({ compte: { ...compte, emailExpediteur: profil.email }, profil });
       updateAuthUser({
         nom: profil.nom,
         prenom: profil.prenom,
@@ -498,7 +498,7 @@ export default function ParametresScreen() {
                 {previewId === tmpl.id && (
                   <div className="space-y-2 bg-[#F5F5F7]/70 px-4 py-4">
                     <p className="text-[12px] text-[#6E6E73]">
-                      De : {compte.nomExpediteur || 'Expéditeur'} &lt;{compte.emailExpediteur || '—'}&gt;
+                      De : {compte.nomExpediteur || 'Expéditeur'} &lt;{profil.email || '—'}&gt;
                     </p>
                     <p className="text-[15px] font-semibold text-[#1D1D1F]">{fillSample(tmpl.objet)}</p>
                     <p className="whitespace-pre-line text-[14px] leading-relaxed text-[#1D1D1F]">
@@ -536,20 +536,18 @@ export default function ParametresScreen() {
               />
             </Row>
 
-            <Row label="Adresse email" invalid={!isEmail(compte.emailExpediteur)}>
+            <Row label="Adresse email">
               <input
                 type="email"
-                value={compte.emailExpediteur}
-                onChange={(e) => setCompte({ ...compte, emailExpediteur: e.target.value })}
-                placeholder="rh@premium.africa"
-                className={inputClass}
+                value={profil.email}
+                readOnly
+                title="Liée à l'adresse de votre compte (non modifiable)"
+                className={`${inputClass} cursor-not-allowed opacity-60`}
               />
             </Row>
-            {!isEmail(compte.emailExpediteur) && (
-              <p className="px-4 py-2 text-[12px] text-[#E4002B]">
-                Cette adresse n’est pas valide. Exemple : rh@premium.africa
-              </p>
-            )}
+            <p className="px-4 py-2 text-[12px] text-[#6E6E73]">
+              Adresse liée à votre compte : elle ne peut pas être modifiée.
+            </p>
           </Group>
         )}
 
@@ -609,8 +607,9 @@ export default function ParametresScreen() {
                     <input
                       type="email"
                       value={profil.email}
-                      onChange={(e) => setProfil({ ...profil, email: e.target.value })}
-                      className={inputClass}
+                      readOnly
+                      title="Adresse du compte (non modifiable)"
+                      className={`${inputClass} cursor-not-allowed opacity-60`}
                     />
                   </Row>
                   <Row label="Société">
@@ -647,8 +646,9 @@ export default function ParametresScreen() {
                     <input
                       type="email"
                       value={respProfil.email}
-                      onChange={(e) => setRespProfil({ ...respProfil, email: e.target.value })}
-                      className={inputClass}
+                      readOnly
+                      title="Adresse du compte (non modifiable)"
+                      className={`${inputClass} cursor-not-allowed opacity-60`}
                     />
                   </Row>
                   <Row label="Poste">
