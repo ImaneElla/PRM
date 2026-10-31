@@ -234,6 +234,38 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [isEmailModalOpen, setIsEmailModalOpen] = useState(false);
   const [isAddSalarieModalOpen, setIsAddSalarieModalOpen] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+
+  // Après un rechargement de la page, on revient sur le même écran (et le même dossier ouvert)
+  const navigationRestauree = React.useRef(false);
+  React.useEffect(() => {
+    try {
+      const brut = sessionStorage.getItem('gp_navigation');
+      const sauvegarde = brut ? JSON.parse(brut) : null;
+      if (sauvegarde && sauvegarde.role === getAuthUser()?.role) {
+        if (sauvegarde.screen) setCurrentScreen(sauvegarde.screen);
+        if (sauvegarde.salarieId) setSelectedSalarieId(sauvegarde.salarieId);
+        if (sauvegarde.periodeId) setSelectedPeriodeId(sauvegarde.periodeId);
+        if (sauvegarde.responsableId) setSelectedResponsableId(sauvegarde.responsableId);
+      }
+    } catch {
+      // stockage indisponible : on reste sur l'écran par défaut
+    }
+    navigationRestauree.current = true;
+  }, []);
+  React.useEffect(() => {
+    if (!navigationRestauree.current) return;
+    try {
+      sessionStorage.setItem('gp_navigation', JSON.stringify({
+        role: getAuthUser()?.role,
+        screen: currentScreen,
+        salarieId: selectedSalarieId,
+        periodeId: selectedPeriodeId,
+        responsableId: selectedResponsableId,
+      }));
+    } catch {
+      // ignoré
+    }
+  }, [currentScreen, selectedSalarieId, selectedPeriodeId, selectedResponsableId]);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [isLoaded, setIsLoaded] = useState(false);
 
@@ -408,6 +440,38 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       localStorage.setItem('gp_demo_mode', String(isDemoMode));
     }
   }, [isDemoMode, isLoaded]);
+
+  // Après chaque action réussie (création, modification, suppression, relance…), la page se recharge
+  // pour afficher des données à jour. Les écrans dont le résultat doit rester lisible (connexion, imports,
+  // invitations avec lien d'activation, formulaire d'évaluation, IA) sont exclus.
+  React.useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const EXCLUS = ['/auth/', '/import', '/invitation', '/evaluations', '/ai-evaluate', '/modeles-email', '/outils', '/notifications'];
+    const fetchOriginal = window.fetch;
+    let minuterie: ReturnType<typeof setTimeout> | undefined;
+
+    window.fetch = async (...args: Parameters<typeof fetch>) => {
+      const reponse = await fetchOriginal(...args);
+      try {
+        const requete = args[0];
+        const url = typeof requete === 'string' ? requete : requete instanceof URL ? requete.href : requete.url;
+        const methode = (args[1]?.method || (typeof requete === 'object' && 'method' in requete ? requete.method : 'GET')).toUpperCase();
+        const modifie = ['POST', 'PUT', 'PATCH', 'DELETE'].includes(methode);
+        if (reponse.ok && modifie && url.includes('/api/') && !EXCLUS.some(e => url.includes(e))) {
+          clearTimeout(minuterie);
+          minuterie = setTimeout(() => window.location.reload(), 1500);
+        }
+      } catch {
+        // Ne jamais gêner l'appel d'origine
+      }
+      return reponse;
+    };
+
+    return () => {
+      window.fetch = fetchOriginal;
+      clearTimeout(minuterie);
+    };
+  }, []);
 
   React.useEffect(() => {
     if (!isLoaded || isDemoMode) return;

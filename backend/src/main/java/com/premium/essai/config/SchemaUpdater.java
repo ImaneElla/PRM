@@ -19,6 +19,9 @@ public class SchemaUpdater implements CommandLineRunner {
             "ALTER TABLE users ADD COLUMN IF NOT EXISTS reset_token_hash VARCHAR(255)",
             "ALTER TABLE users ADD COLUMN IF NOT EXISTS reset_token_expiry TIMESTAMP",
             "ALTER TABLE notifications ADD COLUMN IF NOT EXISTS destinataire_responsable_id BIGINT",
+            // Hibernate avait figé la liste des valeurs d'enum dans une contrainte CHECK : elle refusait le rôle ADMIN
+            "ALTER TABLE historique_emails DROP CONSTRAINT IF EXISTS historique_emails_role_destinataire_check",
+            "ALTER TABLE historique_emails DROP CONSTRAINT IF EXISTS historique_emails_type_email_check",
     };
 
     private final JdbcTemplate jdbcTemplate;

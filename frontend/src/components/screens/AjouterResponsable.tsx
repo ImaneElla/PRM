@@ -2,10 +2,10 @@
 
 import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
-import { UserPlus, ArrowLeft, Mail, Building2, User, CheckCircle } from 'lucide-react';
+import { UserPlus, ArrowLeft, Mail, User, CheckCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { SOCIETES, SOCIETE_LABELS } from '@/lib/societe';
+
 
 interface FormState {
   firstName: string;
@@ -75,7 +75,6 @@ export default function AjouterResponsable() {
     });
   };
 
-  const selectedSociete = SOCIETE_LABELS[formData.societe as keyof typeof SOCIETE_LABELS];
 
   const initials =
     formData.firstName || formData.lastName
@@ -198,30 +197,6 @@ export default function AjouterResponsable() {
                 </div>
               </div>
 
-              {/* Row 3: Société (full width) */}
-              <div className="space-y-1.5">
-                <label className={labelClass}>
-                  Société / Entité <span className="text-red-500">*</span>
-                </label>
-                <div className="relative">
-                  <Building2 className="w-4 h-4 text-[#6E6E73] absolute left-3 top-2.5" />
-                  <select
-                    name="societe"
-                    required
-                    value={formData.societe}
-                    onChange={handleChange}
-                    className={`${inputClass} cursor-pointer`}
-                  >
-                    {SOCIETES.map(({ code, label }) => (
-                      <option key={code} value={code}>{label}</option>
-                    ))}
-                  </select>
-                  <p className="pl-9 text-[11px] text-[#6E6E73]">
-                    Sélectionnez la société de rattachement du responsable.
-                  </p>
-                </div>
-              </div>
-
               {error && (
                 <p className="text-xs text-red-600 dark:text-red-400 font-medium">{error}</p>
               )}
@@ -260,17 +235,12 @@ export default function AjouterResponsable() {
                   <p className="font-semibold text-[#1D1D1F]">
                     {formData.firstName} {formData.lastName || 'Nom'}
                   </p>
-                  <p className="text-[#6E6E73]">{selectedSociete}</p>
                 </div>
               </div>
               <div className="space-y-2.5 text-xs text-[#6E6E73] border-t border-[#E8E8ED]/80 pt-3">
                 <div className="flex items-center gap-2">
                   <Mail className="w-3.5 h-3.5 text-[#6E6E73] shrink-0" />
                   <span className="truncate">{formData.email || 'Adresse email requise'}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Building2 className="w-3.5 h-3.5 text-[#6E6E73] shrink-0" />
-                  <span className="truncate">{selectedSociete}</span>
                 </div>
               </div>
             </Card>

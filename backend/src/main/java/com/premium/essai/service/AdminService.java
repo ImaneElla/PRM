@@ -35,6 +35,10 @@ public class AdminService {
     @Value("${application.frontend-url:http://localhost:3000}")
     private String frontendUrl;
 
+    // Adresse du serveur sur le réseau : c'est elle que la personne invitée peut ouvrir depuis son poste
+    @Value("${application.frontend-url-reseau:}")
+    private String frontendUrlReseau;
+
     @Transactional(readOnly = true)
     public List<AdminDTO> lister() {
         return userRepository.findByRole(UserRole.ADMIN_RH).stream()
@@ -129,7 +133,7 @@ public class AdminService {
         }
         AdminDTO dto = toDto(admin);
         dto.setEmailEnvoye(envoye);
-        dto.setLienActivation(envoye ? null : frontendUrl + "/reinitialiser-mot-de-passe?token=" + jeton + "&invitation=1");
+        dto.setLienActivation(envoye ? null : (frontendUrlReseau.isBlank() ? frontendUrl : frontendUrlReseau.replaceAll("/+$", "")) + "/reinitialiser-mot-de-passe?token=" + jeton + "&invitation=1");
         dto.setMessage(envoye ? messageSucces
                 : "Compte créé, mais l'e-mail n'a pas pu être envoyé : transmettez le lien d'activation à la personne.");
         return dto;

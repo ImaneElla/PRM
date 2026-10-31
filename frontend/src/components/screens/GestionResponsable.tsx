@@ -27,7 +27,7 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { getProfileAvatarColor } from '@/lib/profileAvatar';
 import { telechargerModeleResponsables } from '@/lib/telechargerModele';
-import { getSocieteLabel, SOCIETES } from '@/lib/societe';
+import { getSocieteLabel } from '@/lib/societe';
 
 interface FormState {
   id?: number;
@@ -660,30 +660,6 @@ export default function GestionResponsable() {
                     onChange={handleChange}
                     className={inputClass}
                   />
-                </div>
-              </div>
-
-              <div className="space-y-1.5">
-                <label htmlFor="resp_societe" className="text-xs font-medium text-[#1D1D1F] dark:text-zinc-100">
-                  Société / Entité <span className="text-red-500">*</span>
-                </label>
-                <div className="relative">
-                  <Building2 className="w-4 h-4 text-[#6E6E73] absolute left-3 top-2.5" />
-                  <select
-                    id="resp_societe"
-                    name="societe"
-                    required
-                    value={formData.societe}
-                    onChange={handleChange}
-                    className="w-full text-xs pl-9 pr-3 py-2 bg-[#F5F5F7]/80 dark:bg-zinc-800/60 border border-[#E8E8ED] dark:border-zinc-700/60 rounded-xl text-[#1D1D1F] dark:text-zinc-100 focus:ring-2 focus:ring-red-500/20 focus:border-red-500 focus:outline-none"
-                  >
-                    {SOCIETES.map(({ code, label }) => (
-                      <option key={code} value={code}>{label}</option>
-                    ))}
-                  </select>
-                  <p className="pl-9 text-[11px] text-[#6E6E73]">
-                    Choisissez la société de rattachement du responsable.
-                  </p>
                 </div>
               </div>
 

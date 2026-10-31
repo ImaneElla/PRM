@@ -45,6 +45,10 @@ public class MailServiceImpl implements MailService {
     @Value("${application.frontend-url}")
     private String frontendUrl;
 
+    // Adresse du serveur sur le réseau local (ex. http://192.168.11.113:3000), ajoutée aux liens des e-mails
+    @Value("${application.frontend-url-reseau:}")
+    private String frontendUrlReseau;
+
     @Value("${application.mail-sender:}")
     private String expediteurParDefaut;
 
@@ -139,7 +143,7 @@ public class MailServiceImpl implements MailService {
                 objet = "Évaluation reçue : " + nomSalarie + " (" + periode.getSalarie().getMatricule() + ")";
                 corps = "Bonjour " + nomAdmin + ",\n\n" + nomManager + " vient de remplir l'évaluation de la période d'essai de "
                         + nomSalarie + ".\n\nNote globale : " + note + "\nRecommandation : " + reco
-                        + "\nDate de soumission : " + dateSoumission + "\n\nConsultez le détail : " + frontendUrl + "/connexion\n\n"
+                        + "\nDate de soumission : " + dateSoumission + "\n\nConsultez le détail : " + plusLienReseau(frontendUrl + "/connexion", "/connexion") + "\n\n"
                         + "Service des Ressources Humaines";
             }
             boolean succes = dispatchEmail(admin.getEmail(), objet, corps);
@@ -209,6 +213,13 @@ public class MailServiceImpl implements MailService {
         return succes;
     }
 
+    private String plusLienReseau(String lienPrincipal, String chemin) {
+        if (frontendUrlReseau == null || frontendUrlReseau.isBlank()) {
+            return lienPrincipal;
+        }
+        return lienPrincipal + "\nDepuis le réseau de l'entreprise : " + frontendUrlReseau.replaceAll("/+$", "") + chemin;
+    }
+
     private String lienEvaluation(PeriodeEvaluation periode) {
         return frontendUrl + "/evaluation/" + periode.getTokenAccesSalarie();
     }
@@ -239,9 +250,9 @@ public class MailServiceImpl implements MailService {
                 .replace("{date_echeance}", echeance)
                 // L'application verrouille l'évaluation à l'échéance : c'est la vraie date limite
                 .replace("{date_limite}", echeance)
-                .replace("{lien}", lienSecurise)
-                .replace("{lien_evaluation}", lienSecurise)
-                .replace("{lien_application}", frontendUrl + "/connexion")
+                .replace("{lien}", plusLienReseau(lienSecurise, "/evaluation/" + periode.getTokenAccesSalarie()))
+                .replace("{lien_evaluation}", plusLienReseau(lienSecurise, "/evaluation/" + periode.getTokenAccesSalarie()))
+                .replace("{lien_application}", plusLienReseau(frontendUrl + "/connexion", "/connexion"))
                 .replace("{identifiant}", periode.getResponsable().getEmail())
                 .replace("{mot_de_passe_temporaire}", motDePasse)
                 .replace("{jours_retard}", joursRetard != null ? String.valueOf(joursRetard) : "");
@@ -257,7 +268,7 @@ public class MailServiceImpl implements MailService {
                 "La Direction des Ressources Humaines vous a créé un compte responsable sur la plateforme de suivi des périodes d'essai.\n\n" +
                 "Identifiant : " + user.getEmail() + "\n" +
                 "Mot de passe temporaire : " + motDePasseTemporaire + "\n\n" +
-                "Connectez-vous ici : " + frontendUrl + "/connexion\n" +
+                "Connectez-vous ici : " + plusLienReseau(frontendUrl + "/connexion", "/connexion") + "\n" +
                 "Lors de votre première connexion, vous devrez choisir un nouveau mot de passe.\n\n" +
                 "Cordialement,\n" +
                 "La Direction des Ressources Humaines";
@@ -269,7 +280,7 @@ public class MailServiceImpl implements MailService {
         String corps = "Bonjour " + user.getPrenom() + " " + user.getNom() + ",\n\n" +
                 "Une réinitialisation de votre mot de passe a été demandée.\n\n" +
                 "Choisissez un nouveau mot de passe ici (lien valable 1 heure, utilisable une seule fois) :\n" +
-                frontendUrl + "/reinitialiser-mot-de-passe?token=" + jeton + "\n\n" +
+                plusLienReseau(frontendUrl + "/reinitialiser-mot-de-passe?token=" + jeton, "/reinitialiser-mot-de-passe?token=" + jeton) + "\n\n" +
                 "Si vous n'êtes pas à l'origine de cette demande, ignorez ce message : votre mot de passe reste inchangé.\n\n" +
                 "Cordialement,\n" +
                 "La Direction des Ressources Humaines";
@@ -282,7 +293,8 @@ public class MailServiceImpl implements MailService {
                 "Un compte administrateur RH vous a été créé sur la plateforme de suivi des périodes d'essai.\n\n" +
                 "Identifiant : " + user.getEmail() + "\n\n" +
                 "Activez votre compte et choisissez votre mot de passe ici (lien valable 48 heures, utilisable une seule fois) :\n" +
-                frontendUrl + "/reinitialiser-mot-de-passe?token=" + jeton + "&invitation=1\n\n" +
+                plusLienReseau(frontendUrl + "/reinitialiser-mot-de-passe?token=" + jeton + "&invitation=1",
+                        "/reinitialiser-mot-de-passe?token=" + jeton + "&invitation=1") + "\n\n" +
                 "Si vous n'attendiez pas cette invitation, ignorez ce message.\n\n" +
                 "Cordialement,\n" +
                 "La Direction des Ressources Humaines";
