@@ -95,6 +95,7 @@ interface AppContextType {
   isEmailModalOpen: boolean;
   isAddSalarieModalOpen: boolean; openAddSalarieModal: () => void; closeAddSalarieModal: () => void;
   isSidebarCollapsed: boolean; setIsSidebarCollapsed: React.Dispatch<React.SetStateAction<boolean>>; toggleSidebar: () => void;
+  isMobileMenuOpen: boolean; setMobileMenuOpen: (open: boolean) => void;
   parametres: Parametres; updateParametres: (newParametres: Partial<Parametres>) => void;
   isLoaded: boolean;
   isDemoMode: boolean; toggleDemoMode: () => void;
@@ -235,6 +236,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [isEmailModalOpen, setIsEmailModalOpen] = useState(false);
   const [isAddSalarieModalOpen, setIsAddSalarieModalOpen] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  // Téléphone / tablette : le menu latéral est un tiroir qui s'ouvre par-dessus la page
+  const [isMobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   // Après un rechargement de la page, on revient sur le même écran (et le même dossier ouvert)
   const navigationRestauree = React.useRef(false);
@@ -720,6 +723,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const showToast = (msg: string) => { setToastMessage(msg); setTimeout(() => setToastMessage(null), 4000); };
 
   const navigateTo = (screen: ScreenId, params?: any) => {
+    setMobileMenuOpen(false);
     if (params?.salarieId) setSelectedSalarieId(params.salarieId);
     if (params?.periodeId) setSelectedPeriodeId(params.periodeId);
     if (params?.responsableId) setSelectedResponsableId(params.responsableId);
@@ -1401,7 +1405,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     <AppContext.Provider value={{
         currentScreen, navigateTo, selectedResponsableId, setSelectedResponsableId, currentRole, setCurrentRole, currentUser, currentResponsable,
         selectedSalarieId, setSelectedSalarieId, selectedPeriodeId, setSelectedPeriodeId, selectedEmail, openEmailModal, closeEmailModal,
-        isEmailModalOpen, isAddSalarieModalOpen, openAddSalarieModal, closeAddSalarieModal, isSidebarCollapsed, setIsSidebarCollapsed, toggleSidebar,
+        isEmailModalOpen, isAddSalarieModalOpen, openAddSalarieModal, closeAddSalarieModal, isSidebarCollapsed, setIsSidebarCollapsed, toggleSidebar, isMobileMenuOpen, setMobileMenuOpen,
         parametres, updateParametres, isLoaded, isDemoMode, toggleDemoMode, directions, responsables, users, allSalaries: salariesList, salaries, archives, allPeriodes: periodesList, periodes,
         evaluations, emails, notifications, dashboardStats, refreshDashboardData, addSalarie, updateSalarie, deleteSalarie, restaurerSalarie, addResponsable, inviterResponsable, importerResponsables, importerSalaries, updateResponsable, deleteResponsable,
         relancerRetard, relancerTousLesRetards, submitEvaluation, saveAIAnalysis, validerDecisionRH, triggerCronBatch0900, markNotificationAsRead, markAllNotificationsAsRead,

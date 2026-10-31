@@ -100,13 +100,13 @@ export default function DashboardApp() {
   };
 
   return (
-    <div className="app-shell flex h-screen w-screen overflow-hidden bg-background text-foreground font-sans antialiased print:block print:h-auto print:overflow-visible print:bg-white">
+    <div className="app-shell flex h-screen w-screen max-lg:h-dvh max-lg:w-full overflow-hidden bg-background text-foreground font-sans antialiased print:block print:h-auto print:overflow-visible print:bg-white">
       <Sidebar />
 
-      <div className="flex-1 flex flex-col h-screen overflow-hidden min-w-0 print:block print:h-auto print:overflow-visible">
+      <div className="flex-1 flex flex-col h-screen max-lg:h-dvh overflow-hidden min-w-0 print:block print:h-auto print:overflow-visible">
         <Header />
 
-        <main className="app-main flex-1 overflow-y-auto p-6 md:p-8 bg-background print:p-0 print:overflow-visible print:h-auto print:bg-white">
+        <main className="app-main flex-1 overflow-y-auto p-3 sm:p-6 lg:p-8 bg-background print:p-0 print:overflow-visible print:h-auto print:bg-white">
           <div className="app-main-inner max-w-7xl mx-auto space-y-6 print:max-w-none print:mx-0 print:space-y-0">
             <div key={currentScreen} className="screen-enter space-y-6 print:space-y-0">
               {renderScreen()}

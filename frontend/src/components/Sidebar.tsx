@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useApp, ScreenId } from '../context/AppContext';
 import {
   LayoutDashboard,
@@ -22,8 +22,7 @@ import {
 } from 'lucide-react';
 import Image from 'next/image';
 
-/* Icônes style SF Symbols : trait fin, extrémités arrondies, version "pleine" (remplissage léger) quand active.
-   La couleur vient du parent (currentColor). */
+
 function SfIcon({ id, active }: { id: string; active?: boolean }) {
   const shapes: Record<string, React.ReactNode> = {
     'dashboard': (<><rect x="3.5" y="3.5" width="7" height="7" rx="2" /><rect x="13.5" y="3.5" width="7" height="7" rx="2" /><rect x="3.5" y="13.5" width="7" height="7" rx="2" /><rect x="13.5" y="13.5" width="7" height="7" rx="2" /></>),
@@ -53,9 +52,22 @@ export default function Sidebar() {
     notifications,
     emails = [],
     currentRole,
-    isSidebarCollapsed,
+    isSidebarCollapsed: sidebarReduite,
+    isMobileMenuOpen,
+    setMobileMenuOpen,
     toggleSidebar
   } = useApp();
+
+  // Téléphone / tablette : le menu est un tiroir plein format, jamais réduit
+  const [mobile, setMobile] = useState(false);
+  useEffect(() => {
+    const requete = window.matchMedia('(max-width: 1023px)');
+    const maj = () => setMobile(requete.matches);
+    maj();
+    requete.addEventListener('change', maj);
+    return () => requete.removeEventListener('change', maj);
+  }, []);
+  const isSidebarCollapsed = sidebarReduite && !mobile;
 
   const [isAdminOpen] = useState(true);
   const [isSystemOpen, setIsSystemOpen] = useState(true);
@@ -136,7 +148,11 @@ export default function Sidebar() {
   };
 
   return (
-    <aside className={`${isSidebarCollapsed ? 'w-20' : 'w-72'} bg-white/70 dark:bg-[#1c1c1e]/70 backdrop-blur-2xl backdrop-saturate-[180%] text-[#1D1D1F] dark:text-white border-r border-black/[0.06] dark:border-white/10 flex flex-col shrink-0 h-screen sticky top-0 select-none font-sans [font-family:-apple-system,BlinkMacSystemFont,'SF_Pro_Display',Inter,sans-serif] overflow-hidden transition-all duration-300 print:hidden`}>
+    <>
+    {isMobileMenuOpen && (
+      <div className="fixed inset-0 z-40 bg-white/70 backdrop-blur-[2px] lg:hidden" onClick={() => setMobileMenuOpen(false)} aria-hidden />
+    )}
+    <aside className={`${isSidebarCollapsed ? 'lg:w-20' : 'lg:w-72'} w-[85vw] max-w-72 fixed inset-y-0 left-0 z-50 ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0 lg:sticky lg:top-0 lg:z-auto max-lg:bg-white max-lg:dark:bg-[#1c1c1e] bg-white/70 backdrop-blur-2xl backdrop-saturate-[180%] text-black border-r border-black/[0.06] flex flex-col shrink-0 h-screen max-lg:h-dvh select-none font-sans [font-family:-apple-system,BlinkMacSystemFont,'SF_Pro_Display',Inter,sans-serif] overflow-hidden transition-all duration-300 print:hidden`}>
 
       {/* Brand Header */}
       <div className={`px-4 h-16 flex items-center shrink-0 ${isSidebarCollapsed ? 'justify-center' : 'justify-between'}`}>
@@ -155,7 +171,7 @@ export default function Sidebar() {
             <div onClick={() => navigateTo('dashboard')} className="p-1 flex items-center cursor-pointer ml-10">
               <Image src="/logo-groupe-premium.png" alt="Groupe Premium" width={132} height={35} style={{ width: "auto", height: "auto" }} className="object-contain" priority />
             </div>
-            <button onClick={toggleSidebar} aria-label="Réduire le menu" className="w-8 h-8 rounded-[10px] text-[#86868B] hover:text-[#1D1D1F] dark:hover:text-white hover:bg-black/[0.06] dark:hover:bg-white/10 flex items-center justify-center cursor-pointer transition-all duration-200 active:scale-95">
+            <button onClick={mobile ? () => setMobileMenuOpen(false) : toggleSidebar} aria-label="Réduire le menu" className="w-8 h-8 rounded-[10px] text-[#86868B] hover:text-[#1D1D1F]  hover:bg-black/[0.06] flex items-center justify-center cursor-pointer transition-all duration-200 active:scale-95">
               <PanelLeft className="w-4 h-4" />
             </button>
           </div>
@@ -234,5 +250,6 @@ export default function Sidebar() {
         </p>
       </div>
     </aside>
+    </>
   );
 }

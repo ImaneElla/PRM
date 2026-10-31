@@ -8,22 +8,6 @@ import { getSocieteLabel, SOCIETES } from '@/lib/societe';
 import OutilViderDonnees from '../OutilViderDonnees';
 
 // Description des champs insérables dans un modèle (remplacés automatiquement à l'envoi)
-const DESCRIPTION_CHAMPS: Record<string, string> = {
-  '{nom_manager}': 'Nom du responsable évaluateur',
-  '{nom_salarie}': 'Nom et prénom du salarié',
-  '{date_echeance}': "Date de fin de période (JJ/MM/AAAA)",
-  '{date_limite}': "Date limite de l'évaluation",
-  '{lien_evaluation}': "Lien direct vers le formulaire d'évaluation",
-  '{lien_application}': "Lien vers la page de connexion",
-  '{identifiant}': "Identifiant de connexion (e-mail du responsable)",
-  '{jours_retard}': 'Nombre de jours de retard (e-mail de retard)',
-  '{nom_admin}': "Nom de l'administrateur destinataire",
-  '{matricule}': 'Matricule du salarié',
-  '{note_globale}': "Note globale de l'évaluation",
-  '{recommandation}': 'Recommandation du responsable',
-  '{date_soumission}': "Date de soumission de l'évaluation",
-};
-
 const libelleDelai = (delai: number) =>
   delai === -2 ? "Envoyé à tous les administrateurs dès qu'un responsable remplit l'évaluation"
   : delai < 0 ? "Envoyé le lendemain de l'échéance, quand le dossier est bloqué (retard)"
@@ -393,26 +377,9 @@ export default function ParametresScreen() {
       <form onSubmit={handleSaveAll} className="space-y-7">
         {isRH && activeTab === 'emails' && (
           <div className="space-y-7">
-            <Group
-              title="Variables disponibles"
-              footer="Insérez ces variables dans l’objet ou le corps du message : elles seront remplacées automatiquement à l’envoi."
-            >
-              <div className="flex items-start gap-3 px-4 py-3">
-                <IconTile color="bg-orange-500">
-                  <SfIcon name="info" />
-                </IconTile>
-                <div className="grid flex-1 grid-cols-1 gap-x-4 gap-y-1.5 text-[13px] sm:grid-cols-2">
-                  {Object.entries(DESCRIPTION_CHAMPS).map(([v, d]) => (
-                    <div key={v} className="flex items-baseline gap-2">
-                      <code className="rounded-[6px] bg-black/[0.05] px-1.5 py-0.5 font-mono text-[12px] text-[#1D1D1F]">
-                        {v}
-                      </code>
-                      <span className="text-[#6E6E73]">{d}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </Group>
+            <p className="px-4 text-[13px] text-[#6E6E73]">
+              Les variables utilisables dans les messages (nom du salarié, dates, liens…) sont listées dans Aide &gt; Variables des e-mails.
+            </p>
 
             {templatesEtat === 'chargement' && (
               <p className="px-4 text-[13px] text-[#6E6E73]">Chargement des modèles d’e-mail…</p>

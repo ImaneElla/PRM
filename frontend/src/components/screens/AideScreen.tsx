@@ -433,15 +433,56 @@ function QuestionsTab({ role }: { role: Role }) {
 // ============================================================================
 // ÉCRAN AIDE
 // ============================================================================
+const DESCRIPTION_CHAMPS: Record<string, string> = {
+  '{nom_manager}': 'Nom du responsable évaluateur',
+  '{nom_salarie}': 'Nom et prénom du salarié',
+  '{date_echeance}': "Date de fin de période (JJ/MM/AAAA)",
+  '{date_limite}': "Date limite de l'évaluation",
+  '{lien_evaluation}': "Lien direct vers le formulaire d'évaluation",
+  '{lien_application}': "Lien vers la page de connexion",
+  '{identifiant}': "Identifiant de connexion (e-mail du responsable)",
+  '{jours_retard}': 'Nombre de jours de retard (e-mail de retard)',
+  '{nom_admin}': "Nom de l'administrateur destinataire",
+  '{matricule}': 'Matricule du salarié',
+  '{note_globale}': "Note globale de l'évaluation",
+  '{recommandation}': 'Recommandation du responsable',
+  '{date_soumission}': "Date de soumission de l'évaluation",
+};
+
+// Onglet réservé aux RH : variables utilisables dans les modèles d'e-mail
+function VariablesTab() {
+  return (
+    <Card className="p-5 rounded-2xl border-[#E8E8ED] space-y-4">
+      <div>
+        <h3 className="text-sm font-bold text-foreground">Variables des e-mails</h3>
+        <p className="text-xs text-muted-foreground mt-1">
+          Insérez ces variables dans l&apos;objet ou le corps du message (Réglages &gt; Relances) : elles seront remplacées automatiquement à l&apos;envoi.
+        </p>
+      </div>
+      <div className="grid grid-cols-1 gap-x-6 gap-y-3 text-[13px] sm:grid-cols-2">
+        {Object.entries(DESCRIPTION_CHAMPS).map(([v, d]) => (
+          <div key={v} className="flex items-baseline gap-2">
+            <code className="rounded-[6px] bg-black/[0.05] px-1.5 py-0.5 font-mono text-[12px] text-[#1D1D1F] shrink-0">
+              {v}
+            </code>
+            <span className="text-[#6E6E73]">{d}</span>
+          </div>
+        ))}
+      </div>
+    </Card>
+  );
+}
+
 export default function AideScreen() {
   const { navigateTo, currentRole } = useApp();
   const role: Role = currentRole === 'ADMIN_RH' ? 'ADMIN_RH' : 'RESPONSABLE';
 
-  const [tab, setTab] = useState<'guide' | 'questions'>('guide');
+  const [tab, setTab] = useState<'guide' | 'questions' | 'variables'>('guide');
 
-  const tabs: { id: 'guide' | 'questions'; label: string; icon: React.ElementType }[] = [
+  const tabs: { id: 'guide' | 'questions' | 'variables'; label: string; icon: React.ElementType }[] = [
     { id: 'guide', label: 'Guide', icon: BookOpen },
     { id: 'questions', label: 'Questions', icon: HelpCircle },
+    ...(role === 'ADMIN_RH' ? [{ id: 'variables' as const, label: 'Variables des e-mails', icon: Mail }] : []),
   ];
 
   return (
@@ -495,7 +536,7 @@ export default function AideScreen() {
       </div>
 
       {/* Contenu de l'onglet */}
-      {tab === 'guide' ? <GuideTab /> : <QuestionsTab role={role} />}
+      {tab === 'guide' ? <GuideTab /> : tab === 'variables' && role === 'ADMIN_RH' ? <VariablesTab /> : <QuestionsTab role={role} />}
 
       {/* Contact support (fin de page) */}
       <Card className="p-5 rounded-2xl border-[#E8E8ED] flex flex-col sm:flex-row items-center justify-between gap-3">

@@ -1,5 +1,8 @@
 @import "tailwindcss";
 
+/* Le mode sombre suit le thème choisi dans l'application (classe .dark), pas le réglage du téléphone */
+@custom-variant dark (&:where(.dark, .dark *));
+
 :root {
   /* Apple / macOS 2026 Liquid Glass — Red & Black Light Mode */
   --background: #F5F5F7;
@@ -493,5 +496,39 @@ table,
 
   .print-document .overflow-x-auto {
     overflow: visible !important;
+  }
+}
+
+/* ===== Téléphone et tablette ===== */
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+@media (max-width: 1023px) {
+  .app-main {
+    overflow-x: hidden;
+  }
+
+  /* 16 px minimum : évite le zoom automatique d'iOS quand on touche un champ */
+  .app-main input,
+  .app-main select,
+  .app-main textarea {
+    font-size: 16px;
+  }
+}
+
+@media (max-width: 767px) {
+  /* Les tableaux défilent horizontalement au lieu de dépasser de l'écran */
+  .app-main :not(.overflow-x-auto) > table {
+    display: block;
+    max-width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Fenêtres modales : jamais plus hautes que l'écran, avec défilement interne */
+  .fixed.inset-0 > div {
+    max-height: 92dvh;
+    overflow-y: auto;
   }
 }

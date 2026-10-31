@@ -15,6 +15,7 @@ import { useApp } from "@/context/AppContext";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import ConsulterBouton from "@/components/common/ConsulterBouton";
 
 const TERMINAL_STATUSES = new Set(["COMPLETEE", "VALIDEE_RH", "RUPTURE", "RENOUVELEE", "CONFIRMEE"]);
 
@@ -25,8 +26,24 @@ function formatDate(value: string): string {
     : date.toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" });
 }
 
+function libelleStatut(statut: string, rempli: boolean): string {
+  switch (statut) {
+    case "EN_COURS": return "En cours";
+    case "EN_RELANCE": return "En relance";
+    case "EN_RETARD":
+    case "EN_RETARD_CRITIQUE": return "En retard";
+    case "EN_ATTENTE_DECISION_RH": return "Décision RH";
+    case "RUPTURE": return "Arrêt de contrat";
+    case "RENOUVELEE": return "Renouvellement";
+    case "CONFIRMEE": return "Titularisé";
+    case "COMPLETEE":
+    case "VALIDEE_RH": return "Bilan finalisé";
+    default: return rempli ? "Rempli" : "À remplir";
+  }
+}
+
 export default function DashboardResponsable() {
-  const { salaries, periodes, navigateTo } = useApp();
+  const { salaries, periodes, evaluations, navigateTo } = useApp();
 
   const activePeriodes = useMemo(
     () => periodes.filter((periode) => !TERMINAL_STATUSES.has(periode.statut)),
@@ -36,9 +53,10 @@ export default function DashboardResponsable() {
     (periode) => periode.statut === "EN_RETARD" || periode.statut === "EN_RETARD_CRITIQUE" || periode.statut === "EN_ATTENTE_DECISION_RH"
   );
   const completedPeriodes = periodes.filter((periode) => TERMINAL_STATUSES.has(periode.statut));
-  const upcomingPeriodes = [...activePeriodes]
+  // Tous les bilans de l'équipe, classés par échéance (les plus proches d'abord)
+  const suivi = [...periodes]
     .sort((a, b) => new Date(a.dateEcheance).getTime() - new Date(b.dateEcheance).getTime())
-    .slice(0, 5);
+    .slice(0, 10);
 
   return (
     <section className="space-y-6">
@@ -103,51 +121,67 @@ export default function DashboardResponsable() {
           <div>
             <h2 className="font-semibold text-foreground">Évaluations à suivre</h2>
             <p className="mt-1 text-sm text-muted-foreground">
-              Les échéances les plus proches pour votre équipe.
+              Les bilans de votre équipe, classés par échéance.
             </p>
           </div>
           <Clock3 className="h-5 w-5 text-muted-foreground" />
         </div>
 
-        {upcomingPeriodes.length ? (
-          <ul className="divide-y divide-border/60">
-            {upcomingPeriodes.map((periode) => (
-              <li
-                key={periode.id}
-                className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between sm:px-5"
-              >
-                <div className="flex min-w-0 items-center gap-3">
-                  <span
-                    aria-hidden="true"
-                    className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-red-200 bg-red-100 text-xs font-semibold text-red-700"
-                  >
-                    {periode.salarieNom
-                      .trim()
-                      .split(/\s+/)
-                      .slice(0, 2)
-                      .map((name) => name[0])
-                      .join("")
-                      .toUpperCase()}
-                  </span>
-                  <div className="min-w-0">
-                    <p className="truncate font-medium text-foreground">{periode.salarieNom}</p>
-                    <p className="mt-1 text-sm text-muted-foreground">
-                      {periode.typePeriode.replaceAll("_", " ")} · Échéance {formatDate(periode.dateEcheance)}
-                    </p>
-                  </div>
-                </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="cursor-pointer self-start sm:self-auto"
-                  onClick={() => navigateTo("formulaire-evaluation", { periodeId: periode.id })}
-                >
-                  Ouvrir
-                  <ArrowRight className="ml-2 h-4 w-4" />
-                </Button>
-              </li>
-            ))}
-          </ul>
+        {suivi.length ? (
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[640px] text-left text-sm">
+              <thead>
+                <tr className="border-b border-[#E8E8ED]/60 text-xs uppercase tracking-wider text-muted-foreground">
+                  <th className="px-5 py-3 font-medium">Période</th>
+                  <th className="px-5 py-3 font-medium">Collaborateur</th>
+                  <th className="px-5 py-3 font-medium">Échéance</th>
+                  <th className="px-5 py-3 font-medium">Statut</th>
+                  <th className="px-5 py-3 text-right font-medium">Action</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border/60">
+                {suivi.map((periode) => {
+                  const rempli = TERMINAL_STATUSES.has(periode.statut) || evaluations.some((e) => e.periodeId === periode.id);
+                  const enRetard = periode.statut === "EN_RETARD" || periode.statut === "EN_RETARD_CRITIQUE" || periode.statut === "EN_ATTENTE_DECISION_RH";
+                  return (
+                    <tr key={periode.id}>
+                      <td className="px-5 py-3.5 align-middle">
+                        <span className="inline-flex whitespace-nowrap rounded-full bg-[#F5F5F7] px-2.5 py-1 text-xs font-medium text-[#515154]">
+                          {periode.typePeriode === "SIX_MOIS" ? "6 mois" : "3 mois"}
+                        </span>
+                      </td>
+                      <td className="px-5 py-3.5 align-middle">
+                        <p className="font-medium text-foreground">{periode.salarieNom}</p>
+                      </td>
+                      <td className="whitespace-nowrap px-5 py-3.5 align-middle text-muted-foreground">
+                        {formatDate(periode.dateEcheance)}
+                      </td>
+                      <td className="px-5 py-3.5 align-middle">
+                        <Badge variant={enRetard ? "destructive" : rempli ? "appleGreen" : "secondary"} className="text-[10px]">
+                          {libelleStatut(periode.statut, rempli)}
+                        </Badge>
+                      </td>
+                      <td className="px-5 py-3.5 text-right align-middle">
+                        {rempli ? (
+                          <ConsulterBouton periode={periode} size="sm" />
+                        ) : (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="cursor-pointer"
+                            onClick={() => navigateTo("detail-salarie", { salarieId: periode.salarieId })}
+                          >
+                            Dossier
+                            <ArrowRight className="ml-2 h-4 w-4" />
+                          </Button>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
         ) : (
           <p className="p-5 text-sm text-muted-foreground">
             Aucune évaluation active à afficher.

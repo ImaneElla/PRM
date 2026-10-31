@@ -64,6 +64,7 @@ export default function Header() {
     periodes,
     isSidebarCollapsed,
     toggleSidebar,
+    setMobileMenuOpen,
     isDemoMode,
     toggleDemoMode,
   } = useApp();
@@ -226,17 +227,26 @@ export default function Header() {
       <header
         className="
           h-16 bg-white/70 backdrop-blur-2xl backdrop-saturate-[180%] border-b border-black/[0.06]
-          px-5 md:px-6 flex items-center justify-between
+          px-3 sm:px-5 md:px-6 flex items-center justify-between
           sticky top-0 z-30 font-sans [font-family:-apple-system,BlinkMacSystemFont,'SF_Pro_Display',Inter,sans-serif] print:hidden
         "
       >
         <div className="flex items-center gap-3 min-w-0">
+          {/* Téléphone / tablette : bouton qui ouvre le menu latéral */}
+          <button
+            onClick={() => setMobileMenuOpen(true)}
+            className="lg:hidden w-9 h-9 rounded-[10px] text-primary hover:bg-black/[0.06] flex items-center justify-center transition-all active:scale-95 cursor-pointer shrink-0"
+            aria-label="Ouvrir le menu"
+          >
+            <SfIcon name="panel" />
+          </button>
+
           {isSidebarCollapsed && (
             <button
               onClick={toggleSidebar}
               className="
-                w-8 h-8 rounded-[10px] text-primary hover:bg-black/[0.06]
-                flex items-center justify-center transition-all duration-200 active:scale-95
+                hidden lg:flex w-8 h-8 rounded-[10px] text-primary hover:bg-black/[0.06]
+                items-center justify-center transition-all duration-200 active:scale-95
                 cursor-pointer shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40
               "
               title="Développer la barre latérale"
@@ -248,7 +258,7 @@ export default function Header() {
 
           <div className="min-w-0">
             {/* Fil d'Ariane */}
-            <div className="flex items-center gap-1.5 text-[11px] font-medium leading-none mb-1">
+            <div className="hidden sm:flex items-center gap-1.5 text-[11px] font-medium leading-none mb-1">
               <span className="text-muted-foreground">Groupe Premium</span>
               <SfIcon name="chevron" className="w-2.5 h-2.5 -rotate-90 text-muted-foreground/60" strokeWidth={2.4} />
               <span className="text-primary font-semibold">
@@ -257,7 +267,7 @@ export default function Header() {
             </div>
 
             {/* Titre */}
-            <h1 className="text-[15px] md:text-base font-semibold text-foreground tracking-[-0.02em] leading-tight truncate max-w-[380px] md:max-w-[560px]">
+            <h1 className="text-[15px] md:text-base font-semibold text-foreground tracking-[-0.02em] leading-tight truncate max-w-[52vw] sm:max-w-[380px] md:max-w-[560px]">
               {getScreenTitle()}
             </h1>
           </div>

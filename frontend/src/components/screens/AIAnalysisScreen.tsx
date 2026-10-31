@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useApp } from '@/context/AppContext';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { Sparkles } from 'lucide-react';
+import { Search, Sparkles } from 'lucide-react';
 import AIAnalysisModule from './AIAnalysisModule';
 import {
   aptitudesPersoItems,
@@ -45,12 +45,29 @@ export default function AIAnalysisScreen() {
     }
   });
 
+  // Liste des collaborateurs : une ligne par bilan, avec sa note (moyenne des trois critères) et l'état de l'analyse
+  const [recherche, setRecherche] = useState('');
+  const lignes = periodes.map((p) => {
+    const ev = evaluations.find((e) => e.periodeId === p.id);
+    const note = ev
+      ? Math.round(((Number(ev.competencesTechniques) + Number(ev.integrationEquipe) + Number(ev.autonomieRigueur)) / 3) * 10) / 10
+      : (p.noteGlobale ?? null);
+    return { periode: p, note, aAnalyse: !!(ev?.donneesAnalyseAI || p.donneesAnalyseAI), rempli: !!ev };
+  });
+  // Filtre : tous, ceux dont l'analyse est faite, ceux qui n'en ont pas encore
+  const [filtre, setFiltre] = useState<'TOUS' | 'ANALYSES' | 'NON_ANALYSES'>('TOUS');
+  const nbAnalyses = lignes.filter((l) => l.aAnalyse).length;
+  const lignesFiltrees = lignes.filter((l) =>
+    (l.periode.salarieNom || '').toLowerCase().includes(recherche.trim().toLowerCase()) &&
+    (filtre === 'TOUS' || (filtre === 'ANALYSES' ? l.aAnalyse : !l.aAnalyse))
+  );
+
   const currentPeriode = periodes.find((p) => p.id === activePeriodeId) || periodes[0];
   const currentEvaluation = evaluations.find((e) => e.periodeId === currentPeriode?.id);
   const savedForm = currentEvaluation?.donneesFormulaireComplet;
   const savedAI = currentEvaluation?.donneesAnalyseAI || currentPeriode?.donneesAnalyseAI;
 
-  const data = currentPeriode
+  const data = currentPeriode && currentEvaluation
     ? {
         salarieName: currentPeriode.salarieNom || 'Salarié',
         poste: savedForm?.poste || currentPeriode.salariePoste || 'Poste non renseigné',
@@ -130,44 +147,135 @@ export default function AIAnalysisScreen() {
         </Card>
       ) : (
         <>
-          <div className="p-4 rounded-[16px] bg-white border border-[#E8E8ED] shadow-[0_4px_24px_rgba(0,0,0,0.04)] flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <div className="space-y-1">
-              <label htmlFor="ai-evaluation-select" className="text-xs font-semibold text-[#1D1D1F] flex items-center gap-1.5 uppercase tracking-wider">
-                Collaborateur &amp; Période à analyser
-              </label>
-              <p className="text-[11px] text-muted-foreground">
-                Sélectionnez le collaborateur pour consulter ou générer son analyse IA.
-              </p>
-            </div>
+          <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-[340px_minmax(0,1fr)]">
+            {/* Liste des collaborateurs avec leur note */}
+            <aside className="rounded-[16px] border border-[#E8E8ED] bg-white shadow-[0_4px_24px_rgba(0,0,0,0.04)] lg:sticky lg:top-0">
+              <div className="space-y-3 border-b border-[#E8E8ED] p-4">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-wider text-[#1D1D1F]">Collaborateurs</p>
+                  <p className="text-[11px] text-muted-foreground">{lignes.length} bilan{lignes.length > 1 ? 's' : ''} · choisissez-en un pour générer son analyse.</p>
+                </div>
+                <div className="relative">
+                  <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[#86868B]" />
+                  <input
+                    type="search"
+                    value={recherche}
+                    onChange={(e) => setRecherche(e.target.value)}
+                    placeholder="Rechercher un collaborateur"
+                    aria-label="Rechercher un collaborateur"
+                    className="h-9 w-full rounded-[10px] border border-[#E8E8ED] bg-[#F5F5F7] pl-8 pr-3 text-xs outline-none focus:border-[#1D1D1F]"
+                  />
+                </div>
+                <div className="grid grid-cols-3 gap-1 rounded-[10px] bg-[#F5F5F7] p-1" role="tablist" aria-label="Filtrer par état de l'analyse">
+                  {([
+                    ['TOUS', `Tous (${lignes.length})`],
+                    ['ANALYSES', `Analysés (${nbAnalyses})`],
+                    ['NON_ANALYSES', `Non analysés (${lignes.length - nbAnalyses})`],
+                  ] as const).map(([valeur, libelle]) => (
+                    <button
+                      key={valeur}
+                      type="button"
+                      role="tab"
+                      aria-selected={filtre === valeur}
+                      onClick={() => setFiltre(valeur)}
+                      className={`cursor-pointer rounded-[8px] px-1.5 py-1.5 text-[11px] font-medium leading-tight transition-colors ${
+                        filtre === valeur ? 'bg-white text-[#1D1D1F] shadow-sm' : 'text-[#6E6E73] hover:text-[#1D1D1F]'
+                      }`}
+                    >
+                      {libelle}
+                    </button>
+                  ))}
+                </div>
+              </div>
 
-            <div className="w-full md:w-88">
-              <select
-                id="ai-evaluation-select"
-                value={currentPeriode?.id ?? ''}
-                onChange={(event) => setActivePeriodeId(Number(event.target.value))}
-                className="w-full rounded-[12px] border border-[#E8E8ED] bg-[#F5F5F7] px-3 py-2 h-10 text-xs font-semibold text-[#1D1D1F] focus:ring-[4px] focus:ring-black/5 focus:border-[#1D1D1F] outline-none cursor-pointer transition-all duration-200"
-              >
-                {periodes.map((p) => {
-                  const hasAI = !!(p.donneesAnalyseAI || evaluations.find((e) => e.periodeId === p.id)?.donneesAnalyseAI);
+              <ul className="max-h-[60vh] divide-y divide-[#E8E8ED] overflow-y-auto">
+                {lignesFiltrees.length === 0 && (
+                  <li className="p-4 text-center text-xs text-muted-foreground">Aucun collaborateur trouvé.</li>
+                )}
+                {lignesFiltrees.map(({ periode: p, note, aAnalyse, rempli }) => {
+                  const actif = p.id === currentPeriode?.id;
                   return (
-                    <option key={p.id} value={p.id}>
-                      {p.salarieNom} — {p.typePeriode === 'TROIS_MOIS' ? 'Période 1 (3 mois)' : 'Période 2 (6 mois)'} {hasAI ? '✦ (Analyse enregistrée)' : ''}
-                    </option>
+                    <li key={p.id}>
+                      <button
+                        type="button"
+                        onClick={() => setActivePeriodeId(p.id)}
+                        className={`flex w-full cursor-pointer items-center gap-3 px-4 py-3 text-left transition-colors ${actif ? 'bg-[#F5F5F7]' : 'hover:bg-[#FAFAFB]'}`}
+                      >
+                        <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm font-semibold ${actif ? 'bg-[#E4002B] text-white' : 'bg-[#F0F0F5] text-[#515154]'}`}>
+                          {(p.salarieNom || '?').trim().charAt(0).toUpperCase()}
+                        </span>
+                        <span className="min-w-0 flex-1">
+                          <span className="block truncate text-sm font-medium text-[#1D1D1F]">{p.salarieNom}</span>
+                          <span className="block truncate text-[11px] text-muted-foreground">
+                            {p.typePeriode === 'TROIS_MOIS' ? 'Bilan 3 mois' : 'Bilan 6 mois'}
+                            {' · '}
+                            {!rempli ? 'Non rempli' : aAnalyse ? 'Analyse générée' : 'À analyser'}
+                          </span>
+                        </span>
+                        <span className="shrink-0 text-right">
+                          <span className="block text-sm font-semibold text-[#1D1D1F]">{note !== null ? note.toFixed(1) : '—'}</span>
+                          <span className="block text-[10px] text-[#86868B]">/ 5</span>
+                        </span>
+                      </button>
+                    </li>
                   );
                 })}
-              </select>
+              </ul>
+            </aside>
+
+            {/* Fenêtre de génération de l'analyse IA */}
+            <div className="min-w-0">
+              {data ? (
+                <AIAnalysisModule
+                  key={currentPeriode?.id}
+                  data={data}
+                  onSaveAnalysis={(res) => {
+                    if (currentPeriode?.id) saveAIAnalysis(currentPeriode.id, res);
+                  }}
+                />
+              ) : (
+                <Card className="space-y-4 p-6">
+                  {/* Le bilan concerné */}
+                  <div className="flex items-start justify-between gap-3 border-b border-[#E8E8ED] pb-4">
+                    <div className="min-w-0">
+                      <p className="text-xs text-[#6E6E73]">
+                        {currentPeriode?.typePeriode === 'TROIS_MOIS' ? 'Bilan 3 mois' : 'Bilan 6 mois'}
+                      </p>
+                      <h3 className="truncate text-lg font-semibold text-[#1D1D1F]">{currentPeriode?.salarieNom}</h3>
+                      <p className="mt-0.5 text-xs text-[#6E6E73]">
+                        {currentPeriode?.salariePoste ? `${currentPeriode.salariePoste} · ` : ''}
+                        Échéance : {currentPeriode?.dateEcheance}
+                      </p>
+                    </div>
+                    <span className="shrink-0 rounded-full bg-[#F5F5F7] px-2.5 py-1 text-[11px] font-medium text-[#6E6E73]">Non rempli</span>
+                  </div>
+
+                  <dl className="grid grid-cols-2 gap-4 text-xs">
+                    <div>
+                      <dt className="text-[#6E6E73]">Responsable</dt>
+                      <dd className="mt-0.5 text-sm font-medium text-[#1D1D1F]">{currentPeriode?.responsableNom || '—'}</dd>
+                    </div>
+                    <div>
+                      <dt className="text-[#6E6E73]">Note globale</dt>
+                      <dd className="mt-0.5 text-sm font-medium text-[#1D1D1F]">—</dd>
+                    </div>
+                  </dl>
+
+                  <p className="rounded-xl bg-[#F5F5F7] p-3 text-xs text-[#6E6E73]">
+                    Ce bilan n&apos;a pas encore été rempli par le responsable : l&apos;analyse IA sera disponible dès qu&apos;il le sera.
+                  </p>
+
+                  {currentPeriode && (
+                    <div className="flex justify-end">
+                      <Button size="sm" variant="outline" onClick={() => navigateTo('formulaire-evaluation', { periodeId: currentPeriode.id })}>
+                        Ouvrir le formulaire du bilan
+                      </Button>
+                    </div>
+                  )}
+                </Card>
+              )}
             </div>
           </div>
-
-          {data && (
-            <AIAnalysisModule
-              key={currentPeriode?.id}
-              data={data}
-              onSaveAnalysis={(res) => {
-                if (currentPeriode?.id) saveAIAnalysis(currentPeriode.id, res);
-              }}
-            />
-          )}
         </>
       )}
     </div>

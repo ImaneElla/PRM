@@ -151,7 +151,7 @@ public class EvaluationServiceImpl implements EvaluationService {
 
         notificationService.creerAlerte(
                 "Evaluation completee : " + nomSalarie,
-                "Le responsable " + nomManager + " a rempli l'evaluation. Decision : " + recommandation.name(),
+                "Le responsable " + nomManager + " a rempli l'evaluation. Décision : " + libelleRecommandation(recommandation),
                 CibleRole.ALL_RH,
                 salarie.getId()
         );
@@ -284,5 +284,14 @@ public class EvaluationServiceImpl implements EvaluationService {
                 .dateSoumission(detail.getDateSoumission())
                 .jsonReponsesCriteres(detail.getJsonReponsesCriteres())
                 .build();
+    }
+
+    // Texte lisible d'une recommandation (affiché dans les notifications)
+    private static String libelleRecommandation(RecommandationEvaluateur recommandation) {
+        return switch (recommandation) {
+            case CONFIRMATION_CDI -> "Confirmation CDI";
+            case PROLONGATION_ESSAI -> "Prolongation essai";
+            case RUPTURE_CONTRAT -> "Rupture contrat";
+        };
     }
 }

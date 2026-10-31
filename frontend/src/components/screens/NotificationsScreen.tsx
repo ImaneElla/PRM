@@ -1,8 +1,10 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useApp, ScreenId } from '../../context/AppContext';
-import { Bell, Clock, Cog, CheckCircle2, ChevronRight, CheckCheck, UserCheck, ShieldAlert } from 'lucide-react';
+import { Bell, Clock, Cog, CheckCircle2, ChevronRight, CheckCheck, UserCheck, ShieldAlert, X } from 'lucide-react';
+import type { NotificationItem } from '../../types';
 
 const TYPE_STYLES: Record<
   string,
@@ -36,6 +38,19 @@ const DEFAULT_STYLE = {
   tile: 'bg-[#F5F5F7] text-[#6E6E73]',
 };
 
+// Les anciennes notifications contiennent la valeur brute (PROLONGATION_ESSAI) : on l'affiche lisiblement
+const LIBELLES_CODES: Record<string, string> = {
+  CONFIRMATION_CDI: 'Confirmation CDI',
+  PROLONGATION_ESSAI: 'Prolongation essai',
+  RUPTURE_CONTRAT: 'Rupture contrat',
+};
+const lisible = (texte: string) =>
+  texte.replace(/\b[A-Z]{2,}(?:_[A-Z]{2,})+\b/g, (code) => {
+    if (LIBELLES_CODES[code]) return LIBELLES_CODES[code];
+    const mots = code.toLowerCase().replace(/_/g, ' ');
+    return mots.charAt(0).toUpperCase() + mots.slice(1);
+  });
+
 export default function NotificationsScreen() {
   const {
     notifications,
@@ -46,6 +61,14 @@ export default function NotificationsScreen() {
   } = useApp();
 
   const [filter, setFilter] = useState<'all' | 'unread'>('all');
+  // Notification ouverte dans la fenêtre de détails
+  const [selection, setSelection] = useState<NotificationItem | null>(null);
+  useEffect(() => {
+    if (!selection) return;
+    const surTouche = (e: KeyboardEvent) => e.key === 'Escape' && setSelection(null);
+    document.addEventListener('keydown', surTouche);
+    return () => document.removeEventListener('keydown', surTouche);
+  }, [selection]);
 
   // Le serveur ne renvoie que les notifications de l'utilisateur connecté (RH partagées pour un admin,
   // les siennes pour un responsable) : pas de filtre supplémentaire par rôle
@@ -130,7 +153,7 @@ export default function NotificationsScreen() {
           {visible.map((n) => {
             const style = TYPE_STYLES[n.type] ?? DEFAULT_STYLE;
             const Icon = style.icon;
-            const clickable = Boolean(n.lienEcran);
+            const clickable = true;
 
             return (
               <li key={n.id}>
@@ -138,12 +161,7 @@ export default function NotificationsScreen() {
                   type="button"
                   onClick={() => {
                     markNotificationAsRead(n.id);
-                    if (n.lienEcran) {
-                      navigateTo(n.lienEcran as ScreenId, {
-                        salarieId: n.targetId,
-                        periodeId: n.targetId,
-                      });
-                    }
+                    setSelection({ ...n, estLue: true });
                   }}
                   className={`group flex w-full items-start gap-3.5 px-4 py-3.5 text-left transition-colors cursor-pointer ${
                     !n.estLue
@@ -166,7 +184,7 @@ export default function NotificationsScreen() {
                           n.estLue ? 'font-medium' : 'font-bold'
                         }`}
                       >
-                        {n.titre}
+                        {lisible(n.titre)}
                       </span>
                       <span className="shrink-0 text-[10px] font-mono text-[#6E6E73] tabular-nums">
                         {n.dateCreation} {n.heureCreation}
@@ -174,7 +192,7 @@ export default function NotificationsScreen() {
                     </span>
 
                     <span className="mt-1 block text-xs leading-relaxed text-[#6E6E73] line-clamp-2">
-                      {n.message}
+                      {lisible(n.message)}
                     </span>
 
                     <div className="mt-2 flex items-center gap-2">
@@ -209,6 +227,102 @@ export default function NotificationsScreen() {
             );
           })}
         </ul>
+      )}
+
+      {/* Fenêtre de détails d'une notification */}
+      {selection && typeof document !== 'undefined' && createPortal(
+        (() => {
+          const style = TYPE_STYLES[selection.type] ?? DEFAULT_STYLE;
+          const Icon = style.icon;
+          const urgente = selection.priorite === 'HAUTE' || selection.priorite === 'URGENTE';
+          const destinataire = selection.cibleRole === 'RESPONSABLE' ? 'Responsable concerné'
+            : selection.cibleRole === 'TOUS' ? 'Tous les utilisateurs'
+            : 'Équipe RH';
+          return (
+            <div
+              className="fixed inset-0 z-[9999] flex overflow-y-auto bg-zinc-900/40 p-4 backdrop-blur-xs"
+              onClick={() => setSelection(null)}
+            >
+              <div
+                role="dialog"
+                aria-modal="true"
+                aria-label="Détails de la notification"
+                className="m-auto w-full max-w-lg rounded-[20px] border border-[#E8E8ED] bg-white p-6 shadow-2xl"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex items-start gap-3">
+                    <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${style.tile}`}>
+                      <Icon className="h-5 w-5" strokeWidth={1.75} />
+                    </span>
+                    <div className="min-w-0">
+                      <h3 className="text-base font-semibold leading-snug text-[#1D1D1F]">{selection.titre}</h3>
+                      <p className="mt-0.5 font-mono text-[11px] tabular-nums text-[#6E6E73]">
+                        {selection.dateCreation} {selection.heureCreation}
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setSelection(null)}
+                    aria-label="Fermer"
+                    className="cursor-pointer rounded-lg p-1.5 text-[#6E6E73] hover:bg-[#F5F5F7]"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+
+                <p className="mt-4 whitespace-pre-line text-sm leading-relaxed text-[#1D1D1F]">{lisible(selection.message)}</p>
+
+                <dl className="mt-5 grid grid-cols-2 gap-3 border-t border-[#E8E8ED] pt-4 text-xs">
+                  <div>
+                    <dt className="text-[#6E6E73]">Type</dt>
+                    <dd className="mt-0.5 font-medium text-[#1D1D1F]">{style.label}</dd>
+                  </div>
+                  <div>
+                    <dt className="text-[#6E6E73]">Priorité</dt>
+                    <dd className={`mt-0.5 font-medium ${urgente ? 'text-red-600' : 'text-[#1D1D1F]'}`}>
+                      {selection.priorite.charAt(0) + selection.priorite.slice(1).toLowerCase()}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt className="text-[#6E6E73]">Destinataire</dt>
+                    <dd className="mt-0.5 font-medium text-[#1D1D1F]">{destinataire}</dd>
+                  </div>
+                  <div>
+                    <dt className="text-[#6E6E73]">État</dt>
+                    <dd className="mt-0.5 font-medium text-[#1D1D1F]">Lue</dd>
+                  </div>
+                </dl>
+
+                <div className="mt-6 flex justify-end gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setSelection(null)}
+                    className="cursor-pointer rounded-[10px] border border-[#E8E8ED] bg-white px-4 py-2 text-xs font-medium text-[#1D1D1F] hover:bg-[#F5F5F7]"
+                  >
+                    Fermer
+                  </button>
+                  {selection.lienEcran && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const n = selection;
+                        setSelection(null);
+                        navigateTo(n.lienEcran as ScreenId, { salarieId: n.targetId, periodeId: n.targetId });
+                      }}
+                      className="inline-flex cursor-pointer items-center gap-1.5 rounded-[10px] bg-[#E4002B] px-4 py-2 text-xs font-semibold text-white hover:bg-[#CC0027]"
+                    >
+                      Ouvrir le dossier
+                      <ChevronRight className="h-3.5 w-3.5" strokeWidth={2} />
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+          );
+        })(),
+        document.body
       )}
     </div>
   );
