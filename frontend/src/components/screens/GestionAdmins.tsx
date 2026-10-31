@@ -185,6 +185,22 @@ export default function GestionAdmins() {
                         </Button>
                       )
                     )}
+
+                    {!estMoi && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        disabled={occupe}
+                        onClick={() => {
+                          if (window.confirm(`Supprimer définitivement ${admin.email} ? Cette action est irréversible.`)) {
+                            executer(admin, () => adminService.supprimer(admin.id), "Administrateur supprimé.");
+                          }
+                        }}
+                        className="rounded-xl text-xs cursor-pointer text-red-700 hover:text-red-800"
+                      >
+                        Supprimer
+                      </Button>
+                    )}
                   </div>
                 </div>
               );

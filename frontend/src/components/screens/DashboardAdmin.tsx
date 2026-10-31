@@ -80,8 +80,31 @@ function DashboardRH() {
     parametres,
     isDemoMode,
     dashboardStats,
-    refreshDashboardData
+    refreshDashboardData,
+    showToast
   } = useApp();
+
+  const [actualisation, setActualisation] = React.useState(false);
+  const actualiser = async () => {
+    if (!refreshDashboardData) return;
+    setActualisation(true);
+    try {
+      await refreshDashboardData();
+      showToast('Données actualisées.');
+    } finally {
+      setActualisation(false);
+    }
+  };
+
+  // « Total titularisés » : liste des salariés filtrée sur « Titularisé » (les titularisés ne sont pas archivés)
+  const ouvrirTitularises = () => {
+    try { sessionStorage.setItem('gp_filtre_salaries', 'CONFIRMEE'); } catch { /* stockage indisponible */ }
+    navigateTo('salaries');
+  };
+
+  // « Taux de titularisation » : fait défiler jusqu'au graphique des décisions
+  const allerAuGraphique = () =>
+    document.getElementById('graphique-decisions')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
 
   // Refresh backend dashboard data on mount
   React.useEffect(() => {
@@ -253,12 +276,13 @@ function DashboardRH() {
         <div className="flex items-center gap-2.5 shrink-0">
           <Button
             variant="outline"
-            onClick={() => refreshDashboardData && refreshDashboardData()}
+            onClick={actualiser}
+            disabled={actualisation}
             size="sm"
             className="flex items-center gap-1.5 cursor-pointer shadow-2xs hover:bg-red-50 hover:text-red-700 hover:border-red-200 transition-colors"
           >
-            <RefreshCw className="w-3.5 h-3.5 text-muted-foreground" strokeWidth={1.75} />
-            <span>Actualiser</span>
+            <RefreshCw className={`w-3.5 h-3.5 text-muted-foreground ${actualisation ? 'animate-spin' : ''}`} strokeWidth={1.75} />
+            <span>{actualisation ? 'Actualisation…' : 'Actualiser'}</span>
           </Button>
           <Button
             variant="outline"
@@ -333,7 +357,7 @@ function DashboardRH() {
 
         {/* 1 — TOTAL TITULARISÉS */}
         <Card
-          onClick={() => navigateTo('archive')}
+          onClick={() => ouvrirTitularises()}
           className="group relative overflow-hidden cursor-pointer bg-white border border-[#E8E8ED] rounded-[20px] p-5 shadow-[0_4px_24px_rgba(0,0,0,0.04),0_1px_2px_rgba(0,0,0,0.04)] transition-all duration-200 ease-out hover:-translate-y-px hover:shadow-[0_8px_32px_rgba(0,0,0,0.08)] hover:border-[#E4002B]/20"
         >
           <div className="absolute -right-8 -bottom-8 w-32 h-32 bg-gradient-to-br from-[#FFF0F3] to-transparent rotate-12 transition-transform duration-500 group-hover:scale-125" />
@@ -419,7 +443,7 @@ function DashboardRH() {
 
         {/* 3 — TAUX DE TITULARISATION */}
         <Card
-          onClick={() => navigateTo('archive')}
+          onClick={() => allerAuGraphique()}
           className="group relative overflow-hidden cursor-pointer bg-white border border-[#E8E8ED] rounded-[20px] p-5 shadow-[0_4px_24px_rgba(0,0,0,0.04),0_1px_2px_rgba(0,0,0,0.04)] transition-all duration-200 ease-out hover:-translate-y-px hover:shadow-[0_8px_32px_rgba(0,0,0,0.08)] hover:border-[#E4002B]/20"
         >
           <div className="absolute -right-8 -bottom-8 w-32 h-32 bg-gradient-to-br from-[#FFF0F3] to-transparent rotate-12 transition-transform duration-500 group-hover:scale-125" />
@@ -486,7 +510,7 @@ function DashboardRH() {
 
         {/* Left Column (2 Cols): Graphique Ultra-Design */}
         <div className="lg:col-span-2 space-y-6">
-          <Card className="overflow-hidden rounded-[20px] border border-[#E8E8ED] bg-white shadow-[0_4px_24px_rgba(0,0,0,0.04)] hover:shadow-[0_8px_32px_rgba(0,0,0,0.08)] transition-all duration-200">
+          <Card id="graphique-decisions" className="overflow-hidden rounded-[20px] border border-[#E8E8ED] bg-white shadow-[0_4px_24px_rgba(0,0,0,0.04)] hover:shadow-[0_8px_32px_rgba(0,0,0,0.08)] transition-all duration-200">
             <div className="p-4 sm:p-5 border-b border-[#E8E8ED] flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white">
               <div className="flex items-center gap-3">
              

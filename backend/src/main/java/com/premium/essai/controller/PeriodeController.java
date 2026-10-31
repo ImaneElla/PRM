@@ -74,8 +74,8 @@ public class PeriodeController {
 
     /*
      * Statut affiché d'une période ouverte, selon les jours restants avant l'échéance (indépendant de la tâche automatique) :
-     *   plus de 14 jours : En cours · de 14 jours jusqu'à l'échéance : En relance
-     *   échéance dépassée (1 jour ou plus) : en attente de décision RH.
+     *   plus de 14 jours : En cours · de 14 à 8 jours : En relance · de 7 jours jusqu'à l'échéance : En retard
+     *   échéance dépassée de 1 à 14 jours : En relance · de plus de 14 jours : en attente de décision RH.
      * Une période close, décidée ou d'un salarié archivé garde son statut enregistré.
      */
     private String statutAffiche(PeriodeEvaluation p) {
@@ -84,9 +84,12 @@ public class PeriodeController {
             return p.getStatut().name();
         }
         long joursRestants = ChronoUnit.DAYS.between(LocalDate.now(), p.getDateEcheance());
-        if (joursRestants < 0) return StatutPeriode.EN_ATTENTE_DECISION_RH.name();
+        if (joursRestants < -NotificationEcheanceService.DELAI_APRES_ECHEANCE_JOURS) return StatutPeriode.EN_ATTENTE_DECISION_RH.name();
+        // Échéance dépassée depuis 14 jours ou moins : encore « En relance » (le formulaire reste ouvert)
+        if (joursRestants < 0) return StatutPeriode.EN_RELANCE.name();
         if (joursRestants > 14) return StatutPeriode.EN_COURS.name();
-        return StatutPeriode.EN_RELANCE.name();
+        if (joursRestants > 7) return StatutPeriode.EN_RELANCE.name();
+        return StatutPeriode.EN_RETARD_CRITIQUE.name();
     }
 
     // Retard visible immédiatement : une période ouverte dont l'échéance est dépassée est affichée en retard,

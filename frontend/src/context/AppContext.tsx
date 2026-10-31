@@ -480,11 +480,15 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       if (diffDays > 14) {
         newStatut = 'EN_COURS';
         newJoursRetard = undefined;
-      } else if (diffDays >= 0) {
+      } else if (diffDays > 7) {
         newStatut = 'EN_RELANCE';
         newJoursRetard = undefined;
-      } else {
+      } else if (diffDays >= 0) {
         newStatut = 'EN_RETARD';
+        newJoursRetard = undefined;
+      } else {
+        // Échéance dépassée (dès le lendemain) : « Décision RH »
+        newStatut = 'EN_ATTENTE_DECISION_RH';
         newJoursRetard = Math.abs(diffDays);
       }
 

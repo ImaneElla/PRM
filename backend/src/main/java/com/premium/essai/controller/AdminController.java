@@ -47,4 +47,9 @@ public class AdminController {
     public AdminDTO reactiver(@PathVariable Long id, @AuthenticationPrincipal User demandeur) {
         return adminService.reactiver(id, demandeur);
     }
+
+    @DeleteMapping("/{id}")
+    public AdminDTO supprimer(@PathVariable Long id, @AuthenticationPrincipal User demandeur) {
+        return adminService.supprimer(id, demandeur);
+    }
 }

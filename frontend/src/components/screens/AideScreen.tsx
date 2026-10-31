@@ -76,11 +76,15 @@ const SECTIONS: HelpSection[] = [
       },
       {
         q: 'Que signifie « En relance » ?',
-        a: "L'échéance approche (J-14). Un deuxième email de relance a été envoyé au responsable. Le formulaire doit être rempli rapidement.",
+        a: "L'échéance approche (de 14 à 8 jours avant, J-14). Un deuxième email de relance a été envoyé au responsable. Le formulaire doit être rempli rapidement.",
       },
       {
         q: 'Que signifie « En retard » ?',
-        a: "Il reste 7 jours ou moins avant l'échéance (J-7), ou la date est dépassée. Un troisième email urgent est envoyé et la période apparaît dans les alertes.",
+        a: "Il reste 7 jours ou moins avant l'échéance (J-7). Un troisième email urgent est envoyé et la période apparaît dans les alertes. Passé l'échéance, le statut devient « Décision RH ».",
+      },
+      {
+        q: 'Que signifie « Décision RH » ?',
+        a: "L'échéance est dépassée (dès le lendemain, J+1). Le formulaire est verrouillé, le dossier est bloqué et la RH doit enregistrer la décision (titularisation, renouvellement ou arrêt). Un e-mail de retard est envoyé au responsable.",
       },
       {
         q: 'Que signifient « Complétée » et « Validée RH » ?',
@@ -190,6 +194,7 @@ const STATUTS_LEGENDE: { label: string; hint: string; className: string }[] = [
   { label: 'En cours', hint: 'J-21', className: 'bg-blue-50 text-blue-700 border-blue-200' },
   { label: 'En relance', hint: 'J-14', className: 'bg-amber-50 text-amber-800 border-amber-200' },
   { label: 'En retard', hint: 'J-7', className: 'bg-rose-50 text-rose-700 border-rose-200' },
+  { label: 'Décision RH', hint: 'J+1 après l’échéance', className: 'bg-rose-100 text-rose-800 border-rose-300' },
   { label: 'Renouvellement', hint: 'Fin P1 validée', className: 'bg-amber-50 text-amber-800 border-amber-200' },
   { label: 'Validation / Titularisation', hint: 'Fin P2 validée', className: 'bg-emerald-50 text-emerald-800 border-emerald-200' },
   { label: 'Rupture', hint: 'Plus d’emails', className: 'bg-rose-950 text-white border-rose-950' },

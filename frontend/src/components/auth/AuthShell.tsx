@@ -97,7 +97,7 @@ export default function AuthShell({ children, showBack = false, redirectIfAuthen
 
         <section className="flex flex-1 items-center justify-center px-6 py-10 sm:px-12">
           <div className="w-full max-w-md text-center mx-auto">
-            <img src="./logo-groupe-premium.png" alt="Logo" className="mx-auto h-16 w-auto" />
+            <img src="/logo-groupe-premium.png" alt="Logo" width={205} height={55} className="mx-auto h-16 w-auto" />
             {children}
           </div>
         </section>

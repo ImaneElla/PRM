@@ -66,6 +66,12 @@ export const adminService = {
     return post(`/${id}/desactivation`, "Échec de la désactivation");
   },
 
+  async supprimer(id: number): Promise<AdminBackendDTO> {
+    const response = await fetch(`${API_BASE_URL}/admins/${id}`, { method: "DELETE", headers: authHeaders() });
+    if (!response.ok) throw await readError(response, "Échec de la suppression");
+    return response.json();
+  },
+
   reactiver(id: number) {
     return post(`/${id}/reactivation`, "Échec de la réactivation");
   },

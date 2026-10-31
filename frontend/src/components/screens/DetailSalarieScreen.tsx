@@ -732,7 +732,7 @@ export default function DetailSalarieScreen() {
                           <span>Retard de {p.joursRetard} jours constaté</span>
                         </div>
                         <p className="text-[11px] text-destructive/80">
-                          Le délai de réponse (48h après l&apos;email de 09:00) a été dépassé.
+                          L&apos;échéance est dépassée : le formulaire est verrouillé et la décision RH est requise.
                         </p>
                       </div>
                     )}

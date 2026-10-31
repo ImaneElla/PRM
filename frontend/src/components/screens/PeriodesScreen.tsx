@@ -180,7 +180,7 @@ export default function PeriodesScreen() {
   const enAttente = periodesVisibles.filter((p) => ATTENTE_STATUTS.includes(p.statut));
   const nbSalariesEnAttente = new Set(enAttente.map((p) => p.salarieId)).size;
 
-  // 3. En retard (J-7), hors complétées / ruptures
+  // 3. Échéance dépassée (décision RH), hors complétées / ruptures
   const enRetard = periodesVisibles.filter((p) => RETARD_STATUTS.includes(p.statut));
   const enRetardCount = enRetard.length;
 
@@ -307,7 +307,7 @@ export default function PeriodesScreen() {
 
         <KpiCard
           icon={AlertTriangle}
-          title="En Retard (J-7)"
+          title="En Retard"
           value={enRetardCount}
           unit={enRetardCount > 1 ? 'évaluations' : 'évaluation'}
           chip={enRetardCount > 0 ? 'Attention requise' : 'À jour'}
@@ -355,7 +355,8 @@ export default function PeriodesScreen() {
           >
             <option value="ALL">Tous les statuts</option>
             <option value="EN_COURS">En cours (J-21)</option>
-            <option value="EN_RELANCE">En relance (J-14 → échéance)</option>
+            <option value="EN_RELANCE">En relance (J-14)</option>
+            <option value="EN_RETARD">En retard (J-7)</option>
             <option value="EN_ATTENTE_DECISION_RH">Décision RH (échéance dépassée)</option>
           </select>
         </div>

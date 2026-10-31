@@ -44,7 +44,7 @@ public class EvaluationServiceImpl implements EvaluationService {
         PeriodeEvaluation periode = periodeRepository.findByTokenAccesSalarie(token)
                 .orElseThrow(() -> new RuntimeException("Lien d'evaluation invalide ou expire."));
 
-        boolean estDepasse = periode.getDateEcheance() != null && LocalDate.now().isAfter(periode.getDateEcheance());
+        boolean estDepasse = periode.getDateEcheance() != null && LocalDate.now().isAfter(periode.getDateEcheance().plusDays(com.premium.essai.service.NotificationEcheanceService.DELAI_APRES_ECHEANCE_JOURS));
         boolean estEnAttenteRH = periode.getStatut() == StatutPeriode.EN_ATTENTE_DECISION_RH;
 
         if ((estDepasse || estEnAttenteRH) && periode.getStatut() != StatutPeriode.COMPLETEE) {
@@ -77,7 +77,7 @@ public class EvaluationServiceImpl implements EvaluationService {
             throw new IllegalStateException("Une décision RH a déjà été enregistrée pour cette période : l'évaluation ne peut plus être modifiée.");
         }
 
-        boolean estDepasse = periode.getDateEcheance() != null && LocalDate.now().isAfter(periode.getDateEcheance());
+        boolean estDepasse = periode.getDateEcheance() != null && LocalDate.now().isAfter(periode.getDateEcheance().plusDays(com.premium.essai.service.NotificationEcheanceService.DELAI_APRES_ECHEANCE_JOURS));
         boolean estEnAttenteRH = periode.getStatut() == StatutPeriode.EN_ATTENTE_DECISION_RH;
 
         if (estDepasse || estEnAttenteRH) {

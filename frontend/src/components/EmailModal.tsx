@@ -85,8 +85,8 @@ export default function EmailModal() {
                 <Image 
                   src="/logo-groupe-premium.png" 
                   alt="Groupe Premium" 
-                  width={136} 
-                  height={30}
+                  width={112} 
+                  height={30} style={{ width: "auto", height: "auto" }}
                   className="object-contain"
                 />
               </div>

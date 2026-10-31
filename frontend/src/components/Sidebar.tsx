@@ -145,15 +145,15 @@ export default function Sidebar() {
             <Image
               src="/logo-groupe-premium.png"
               alt="Logo"
-              width={300}
-              height={100}
-              className="w-full h-auto"
+              width={205}
+              height={55}
+              style={{ width: "100%", height: "auto" }}
             />
           </div>
         ) : (
           <div className="flex items-center justify-between w-full">
             <div onClick={() => navigateTo('dashboard')} className="p-1 flex items-center cursor-pointer ml-10">
-              <Image src="/logo-groupe-premium.png" alt="Groupe Premium" width={132} height={30} className="object-contain" priority />
+              <Image src="/logo-groupe-premium.png" alt="Groupe Premium" width={132} height={35} style={{ width: "auto", height: "auto" }} className="object-contain" priority />
             </div>
             <button onClick={toggleSidebar} aria-label="Réduire le menu" className="w-8 h-8 rounded-[10px] text-[#86868B] hover:text-[#1D1D1F] dark:hover:text-white hover:bg-black/[0.06] dark:hover:bg-white/10 flex items-center justify-center cursor-pointer transition-all duration-200 active:scale-95">
               <PanelLeft className="w-4 h-4" />

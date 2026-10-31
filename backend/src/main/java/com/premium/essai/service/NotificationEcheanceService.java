@@ -187,6 +187,8 @@ public class NotificationEcheanceService {
                 .build();
     }
 
+    public static final int DELAI_APRES_ECHEANCE_JOURS = 0;
+
     private static final Set<StatutPeriode> STATUTS_CLOTURES = EnumSet.of(
             StatutPeriode.COMPLETEE, StatutPeriode.VALIDE, StatutPeriode.VALIDEE_RH, StatutPeriode.ROMPU,
             StatutPeriode.RUPTURE, StatutPeriode.RENOUVELE, StatutPeriode.TERMINE);
@@ -231,32 +233,68 @@ public class NotificationEcheanceService {
             return false;
         }
         int retard = (int) ChronoUnit.DAYS.between(periode.getDateEcheance(), aujourdhui);
-        boolean nouveau = periode.getStatut() != StatutPeriode.EN_ATTENTE_DECISION_RH;
+        // Jusqu'à 14 jours après l'échéance : « En relance », formulaire encore ouvert. Au-delà : « Décision RH », dossier bloqué.
+        boolean decisionRequise = retard > DELAI_APRES_ECHEANCE_JOURS;
+        // Premier constat : le compteur de retard est encore vide ou à 0 (valeur par défaut)
+        boolean premiereDetection = periode.getJoursRetard() == null || periode.getJoursRetard() <= 0;
+        boolean nouveauBlocage = decisionRequise && periode.getStatut() != StatutPeriode.EN_ATTENTE_DECISION_RH;
+        // Dossier encore dans le délai mais bloqué par l'ancienne règle (blocage dès le lendemain de l'échéance) : on le rouvre
+        boolean aDebloquer = !decisionRequise && periode.getStatut() == StatutPeriode.EN_ATTENTE_DECISION_RH;
         boolean joursChanges = !Integer.valueOf(retard).equals(periode.getJoursRetard());
-        if (!nouveau && !joursChanges) return false;
+        if (!premiereDetection && !nouveauBlocage && !aDebloquer && !joursChanges) return false;
 
         periode.setJoursRetard(retard);
-        if (nouveau) {
-            log.warn("[RETARD / BLOCAGE J+1] Dossier {} bloqué (+{}j de retard).", salarie.getMatricule(), retard);
-            periode.setStatut(StatutPeriode.EN_ATTENTE_DECISION_RH);
-            salarie.setBloqueEmails(true);
-            salarieRepository.save(salarie);
 
+        if (aDebloquer) {
+            log.info("[RETARD] Dossier {} remis « En relance » (+{}j, dans le délai de {} jours).",
+                    salarie.getMatricule(), retard, DELAI_APRES_ECHEANCE_JOURS);
+            periode.setStatut(StatutPeriode.EN_RELANCE);
+            if (salarie.isBloqueEmails()) {
+                salarie.setBloqueEmails(false);
+                salarieRepository.save(salarie);
+            }
+        }
+
+        if (premiereDetection) {
+            log.warn("[RETARD] Dossier {} : échéance dépassée de {} jour(s).", salarie.getMatricule(), retard);
             if (avecEmails) {
                 // Alerte retard envoyée au Manager ET à l'Admin RH (CC), et notification dans l'espace du responsable concerné
                 mailService.sendAlerteRetard(periode, retard);
                 notifierResponsable(periode, "Retard : évaluation de " + nomSalarie(periode),
-                        "Échéance dépassée de " + retard + " jour(s). Le dossier est en attente de décision RH.");
+                        decisionRequise
+                                ? "Échéance dépassée de " + retard + " jour(s). Le dossier est transmis à la Direction RH pour décision."
+                                : "Échéance dépassée de " + retard + " jour(s). Vous pouvez encore remplir l'évaluation pendant "
+                                        + DELAI_APRES_ECHEANCE_JOURS + " jours après l'échéance.");
+            }
+            if (!decisionRequise) {
+                notificationService.creerAlerte(
+                        "RETARD : Dossier " + salarie.getMatricule(),
+                        "Échéance dépassée de " + retard + " jour(s). Le responsable est relancé ; décision RH après "
+                                + DELAI_APRES_ECHEANCE_JOURS + " jours de retard.",
+                        CibleRole.ALL_RH,
+                        salarie.getId()
+                );
+            }
+        }
+
+        if (nouveauBlocage) {
+            log.warn("[DÉCISION RH] Dossier {} bloqué (+{}j de retard).", salarie.getMatricule(), retard);
+            periode.setStatut(StatutPeriode.EN_ATTENTE_DECISION_RH);
+            salarie.setBloqueEmails(true);
+            salarieRepository.save(salarie);
+            if (avecEmails && !premiereDetection) {
+                notifierResponsable(periode, "Décision RH requise : " + nomSalarie(periode),
+                        "Le délai est dépassé de " + retard + " jour(s) : le dossier est transmis à la Direction RH pour décision.");
             }
             notificationService.creerAlerte(
-                    "BLOCAGE J+1 : Dossier " + salarie.getMatricule(),
+                    "DÉCISION RH requise : Dossier " + salarie.getMatricule(),
                     "Délai dépassé de " + retard + " jour(s). Le dossier est en attente de décision RH.",
                     CibleRole.ALL_RH,
                     salarie.getId()
             );
         }
         periodeRepository.save(periode);
-        return nouveau;
+        return premiereDetection || nouveauBlocage;
     }
 
     public record ResultatRelance(boolean envoye, String destinataire, String message) {

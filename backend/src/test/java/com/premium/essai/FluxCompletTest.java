@@ -191,7 +191,7 @@ class FluxCompletTest {
 
     @Test
     void echeanceDepasseeBloqueLeDossierEtStoppeLesEmails() {
-        cron.traiterEcheances(p1.getDateEcheance().plusDays(2), true);
+        cron.traiterEcheances(p1.getDateEcheance().plusDays(1), true);
 
         PeriodeEvaluation p = recharger(p1);
         assertEquals(StatutPeriode.EN_ATTENTE_DECISION_RH, p.getStatut());
@@ -202,7 +202,7 @@ class FluxCompletTest {
     // ---------- Détection immédiate du retard ----------
 
     @Test
-    void unSalarieEmbaucheIlYALongtempsEstImmediatementEnRetardSansEmail() {
+    void unSalarieEmbaucheIlYALongtempsEstImmediatementEnDecisionRHSansEmail() {
         // Historique : embauché il y a 8 mois, la période de 3 mois est échue depuis ~5 mois
         SalarieResponseDTO ancien = salarieService.createSalarie(SalarieRequestDTO.builder()
                 .firstName("Ancien").lastName("Salarie").email("ancien-" + UUID.randomUUID() + "@example.com")
@@ -218,24 +218,33 @@ class FluxCompletTest {
     }
 
     @Test
-    void laDetectionPeriodiqueSignaleLeRetardEtEnvoieUneSeuleAlerte() {
+    void lePremierJourDeRetardPasseEnDecisionRHAvecUneSeuleAlerte() {
         PeriodeEvaluation p = recharger(p1);
         p.setDateEcheance(LocalDate.now().minusDays(1));
         periodeRepository.save(p);
 
         // Même un dimanche ou un jour férié : le retard est constaté (pas de dépendance aux jours ouvrables)
-        int nouveaux = cron.detecterRetards(LocalDate.now(), true);
-
-        assertEquals(1, nouveaux);
+        assertEquals(1, cron.detecterRetards(LocalDate.now(), true));
         PeriodeEvaluation constate = recharger(p1);
         assertEquals(StatutPeriode.EN_ATTENTE_DECISION_RH, constate.getStatut());
         assertEquals(1, constate.getJoursRetard());
+        assertTrue(salarieRepository.findById(salarie.getId()).orElseThrow().isBloqueEmails());
         verify(mailService, times(1)).sendAlerteRetard(any(), org.mockito.ArgumentMatchers.anyInt());
 
-        // Un second passage ne renvoie rien et met à jour les jours de retard
+        // Les jours suivants : jours de retard mis à jour, aucun e-mail de plus
         assertEquals(0, cron.detecterRetards(LocalDate.now().plusDays(2), true));
         assertEquals(3, recharger(p1).getJoursRetard());
         verify(mailService, times(1)).sendAlerteRetard(any(), org.mockito.ArgumentMatchers.anyInt());
+    }
+
+    @Test
+    void leFormulaireSeVerrouilleDesLeLendemainDeLEcheance() {
+        PeriodeEvaluation p = recharger(p1);
+        p.setDateEcheance(LocalDate.now().minusDays(1));
+        periodeRepository.save(p);
+
+        assertThrows(com.premium.essai.exception.EvaluationVerrouilleeException.class,
+                () -> evaluationService.soumettreEvaluation(p1.getId(), evaluation(RecommandationEvaluateur.CONFIRMATION_CDI)));
     }
 
     @Test
@@ -257,9 +266,10 @@ class FluxCompletTest {
     @Test
     void leStatutAfficheSuitLesJoursRestantsAvantLEcheance() throws Exception {
         String admin = jeton(creerCompte("admin", UserRole.ADMIN_RH, null));
-        // jours restants -> statut affiché : En cours (>14), En relance (14 jusqu'à l'échéance), Décision RH (échéance dépassée)
+        // jours restants -> statut : En cours (>14), En relance (14-8), En retard (7 jusqu'à l'échéance),
+        // Décision RH dès le lendemain de l'échéance
         Object[][] cas = {{30, "EN_COURS"}, {15, "EN_COURS"}, {14, "EN_RELANCE"}, {8, "EN_RELANCE"},
-                {7, "EN_RELANCE"}, {0, "EN_RELANCE"}, {-1, "EN_ATTENTE_DECISION_RH"}};
+                {7, "EN_RETARD_CRITIQUE"}, {0, "EN_RETARD_CRITIQUE"}, {-1, "EN_ATTENTE_DECISION_RH"}};
         for (Object[] c : cas) {
             PeriodeEvaluation p = recharger(p1);
             p.setDateEcheance(LocalDate.now().plusDays((Integer) c[0]));
@@ -338,6 +348,40 @@ class FluxCompletTest {
                 .andExpect(status().isForbidden());
         mockMvc.perform(post("/api/periodes/relances").header("Authorization", respo))
                 .andExpect(status().isForbidden());
+    }
+
+    // ---------- Chiffres et graphique du tableau de bord ----------
+
+    @Test
+    void lesChiffresEtLeGraphiqueDuTableauDeBordSuiventLesDecisions() throws Exception {
+        String admin = jeton(creerCompte("admin", UserRole.ADMIN_RH, null));
+        // Aucune décision : tout est à zéro
+        mockMvc.perform(get("/api/dashboard/stats").header("Authorization", admin))
+                .andExpect(jsonPath("$.totalFinalisees").value(0))
+                .andExpect(jsonPath("$.totalTitularises").value(0))
+                .andExpect(jsonPath("$.totalRuptures").value(0))
+                .andExpect(jsonPath("$.tauxTitularisation").value(0.0));
+
+        // Une titularisation et une rupture décidées par la RH
+        SalarieResponseDTO autre = creerSalarie(responsable);
+        PeriodeEvaluation pAutre = periodeRepository.findBySalarieId(autre.getId()).get(0);
+        evaluationService.priseDeDecisionDirecteRH(p1.getId(),
+                DecisionRHRequestDTO.builder().decisionFinale(DecisionFinal.VALIDATION).build());
+        evaluationService.priseDeDecisionDirecteRH(pAutre.getId(),
+                DecisionRHRequestDTO.builder().decisionFinale(DecisionFinal.RUPTURE).build());
+
+        int moisCourant = LocalDate.now().getMonthValue() - 1;
+        mockMvc.perform(get("/api/dashboard/stats").header("Authorization", admin))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalTitularises").value(1))
+                .andExpect(jsonPath("$.totalRuptures").value(1))
+                .andExpect(jsonPath("$.totalFinalisees").value(2))
+                .andExpect(jsonPath("$.tauxTitularisation").value(50.0))
+                .andExpect(jsonPath("$.tauxRupture").value(50.0))
+                // Graphique : 12 mois, les décisions sont placées au mois de la décision
+                .andExpect(jsonPath("$.evolutionMensuelle.length()").value(12))
+                .andExpect(jsonPath("$.evolutionMensuelle[" + moisCourant + "].titularisation").value(1))
+                .andExpect(jsonPath("$.evolutionMensuelle[" + moisCourant + "].ruptures").value(1));
     }
 
     @Test

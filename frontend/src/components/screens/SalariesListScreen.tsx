@@ -88,6 +88,19 @@ export default function SalariesListScreen() {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedSociete, setSelectedSociete] = useState<string>("ALL");
   const [selectedStatut, setSelectedStatut] = useState<string>("ALL");
+
+  // Filtre demandé depuis le tableau de bord (ex. « Total titularisés » -> Titularisé), appliqué une seule fois
+  React.useEffect(() => {
+    try {
+      const demande = sessionStorage.getItem("gp_filtre_salaries");
+      if (demande) {
+        sessionStorage.removeItem("gp_filtre_salaries");
+        setSelectedStatut(demande);
+      }
+    } catch {
+      // stockage indisponible : pas de filtre préréglé
+    }
+  }, []);
   const [selectedPeriode, setSelectedPeriode] = useState<string>("ALL");
   const [viewMode, setViewMode] = useState<"grid" | "list">("list");
 

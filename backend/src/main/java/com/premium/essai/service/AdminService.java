@@ -102,6 +102,21 @@ public class AdminService {
         return toDto(userRepository.save(admin));
     }
 
+    @Transactional
+    public AdminDTO supprimer(Long id, User demandeur) {
+        User admin = trouver(id);
+        if (admin.getId().equals(demandeur.getId())) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Vous ne pouvez pas supprimer votre propre compte.");
+        }
+        if (admin.isEnabled() && !admin.isMustChangePassword() && adminsActifs() <= 1) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Impossible de supprimer le dernier administrateur actif.");
+        }
+        AdminDTO supprime = toDto(admin);
+        userRepository.delete(admin);
+        log.info("Admin {} supprimé par {}", admin.getEmail(), demandeur.getEmail());
+        return supprime;
+    }
+
     private AdminDTO envoyerInvitation(User admin, String messageSucces) {
         String jeton = JetonUtils.generer();
         admin.setResetTokenHash(JetonUtils.empreinte(jeton));

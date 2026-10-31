@@ -29,6 +29,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -199,5 +200,22 @@ class AdminFlowTest {
         mockMvc.perform(post("/api/admins/" + admin.getId() + "/desactivation")
                         .header("Authorization", "Bearer " + token))
                 .andExpect(status().isConflict());
+    }
+
+    @Test
+    void adminCanDeleteAnotherAdminButNotItself() throws Exception {
+        String emailA = email("admin-a");
+        String emailB = email("admin-b");
+        User a = creerCompte(emailA, "AdminSecret1", UserRole.ADMIN_RH);
+        User b = creerCompte(emailB, "AdminSecret2", UserRole.ADMIN_RH);
+        String tokenA = connecter(emailA, "AdminSecret1");
+
+        mockMvc.perform(delete("/api/admins/" + a.getId()).header("Authorization", "Bearer " + tokenA))
+                .andExpect(status().isConflict());
+        mockMvc.perform(delete("/api/admins/" + b.getId()).header("Authorization", "Bearer " + tokenA))
+                .andExpect(status().isOk());
+        assertFalse(userRepository.findById(b.getId()).isPresent());
+        mockMvc.perform(delete("/api/admins/" + b.getId()).header("Authorization", "Bearer " + tokenA))
+                .andExpect(status().isNotFound());
     }
 }

@@ -208,6 +208,6 @@ class NotificationsDestinatairesTest {
         mockMvc.perform(get("/api/notifications").header("Authorization", jeton(emailRespoB)))
                 .andExpect(jsonPath("$.length()").value(0));
         mockMvc.perform(get("/api/notifications").header("Authorization", jeton(emailAdminA)))
-                .andExpect(jsonPath("$[?(@.titre =~ /BLOCAGE J\\+1.*/)]").isNotEmpty());
+                .andExpect(jsonPath("$[?(@.titre =~ /DÉCISION RH requise : Dossier.*/)]").isNotEmpty());
     }
 }
