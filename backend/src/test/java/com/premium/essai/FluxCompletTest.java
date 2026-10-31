@@ -257,9 +257,9 @@ class FluxCompletTest {
     @Test
     void leStatutAfficheSuitLesJoursRestantsAvantLEcheance() throws Exception {
         String admin = jeton(creerCompte("admin", UserRole.ADMIN_RH, null));
-        // jours restants -> statut affiché : En cours (>14), En relance (8-14), En retard (0-7), Décision RH (échéance dépassée)
+        // jours restants -> statut affiché : En cours (>14), En relance (14 jusqu'à l'échéance), Décision RH (échéance dépassée)
         Object[][] cas = {{30, "EN_COURS"}, {15, "EN_COURS"}, {14, "EN_RELANCE"}, {8, "EN_RELANCE"},
-                {7, "EN_RETARD_CRITIQUE"}, {0, "EN_RETARD_CRITIQUE"}, {-1, "EN_ATTENTE_DECISION_RH"}};
+                {7, "EN_RELANCE"}, {0, "EN_RELANCE"}, {-1, "EN_ATTENTE_DECISION_RH"}};
         for (Object[] c : cas) {
             PeriodeEvaluation p = recharger(p1);
             p.setDateEcheance(LocalDate.now().plusDays((Integer) c[0]));
@@ -270,6 +270,74 @@ class FluxCompletTest {
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$[?(@.id == " + p.getId() + ")].statut").value(c[1]));
         }
+    }
+
+    // ---------- Relance manuelle (bouton « Relancer ») ----------
+
+    @Test
+    void laRelanceManuelleEnvoieVraimentLEmailEtDitLaVerite() throws Exception {
+        String admin = jeton(creerCompte("admin", UserRole.ADMIN_RH, null));
+        PeriodeEvaluation p = recharger(p1);
+        p.setDateEcheance(LocalDate.now().minusDays(3)); // échéance dépassée : e-mail de retard
+        periodeRepository.save(p);
+
+        // E-mail réellement parti
+        when(mailService.sendAlerteRetard(any(), org.mockito.ArgumentMatchers.anyInt())).thenReturn(true);
+        mockMvc.perform(post("/api/periodes/" + p.getId() + "/relance").header("Authorization", admin))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.envoye").value(true))
+                .andExpect(jsonPath("$.destinataire").value(responsable.getEmail()));
+        verify(mailService, times(1)).sendAlerteRetard(any(), org.mockito.ArgumentMatchers.eq(3));
+        assertEquals(LocalDate.now(), recharger(p1).getDateDernierRappel());
+        assertEquals(1, notificationRepository.findByDestinataireResponsableIdOrderByDateCreationDesc(responsable.getId()).size());
+
+        // E-mail non parti (SMTP en panne) : le message ne prétend pas le contraire, aucune notification de plus
+        when(mailService.sendAlerteRetard(any(), org.mockito.ArgumentMatchers.anyInt())).thenReturn(false);
+        mockMvc.perform(post("/api/periodes/" + p.getId() + "/relance").header("Authorization", admin))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.envoye").value(false))
+                .andExpect(jsonPath("$.message").value(org.hamcrest.Matchers.containsString("n'a pas pu être envoyé")));
+        assertEquals(1, notificationRepository.findByDestinataireResponsableIdOrderByDateCreationDesc(responsable.getId()).size());
+    }
+
+    @Test
+    void laRelanceAvantEcheanceUtiliseLeRappelEtLesDossiersClosSontRefuses() throws Exception {
+        String admin = jeton(creerCompte("admin", UserRole.ADMIN_RH, null));
+        when(mailService.sendRappelJ14(any())).thenReturn(true);
+
+        // Échéance dans plus de 7 jours : rappel J-14
+        mockMvc.perform(post("/api/periodes/" + p1.getId() + "/relance").header("Authorization", admin))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.envoye").value(true));
+        verify(mailService, times(1)).sendRappelJ14(any());
+
+        // Dossier clôturé : aucune relance
+        PeriodeEvaluation p = recharger(p1);
+        p.setStatut(StatutPeriode.COMPLETEE);
+        periodeRepository.save(p);
+        mockMvc.perform(post("/api/periodes/" + p.getId() + "/relance").header("Authorization", admin))
+                .andExpect(status().isConflict());
+        mockMvc.perform(post("/api/periodes/999999/relance").header("Authorization", admin))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void relancerToutEtDroitsReservesAAdminRH() throws Exception {
+        String admin = jeton(creerCompte("admin", UserRole.ADMIN_RH, null));
+        PeriodeEvaluation p = recharger(p1);
+        p.setDateEcheance(LocalDate.now().minusDays(2));
+        periodeRepository.save(p);
+        when(mailService.sendAlerteRetard(any(), org.mockito.ArgumentMatchers.anyInt())).thenReturn(true);
+
+        mockMvc.perform(post("/api/periodes/relances").header("Authorization", admin))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.envoyees").value(1))
+                .andExpect(jsonPath("$.echecs").value(0));
+
+        String respo = jeton(creerCompte("respo", UserRole.RESPONSABLE, responsable));
+        mockMvc.perform(post("/api/periodes/" + p.getId() + "/relance").header("Authorization", respo))
+                .andExpect(status().isForbidden());
+        mockMvc.perform(post("/api/periodes/relances").header("Authorization", respo))
+                .andExpect(status().isForbidden());
     }
 
     @Test

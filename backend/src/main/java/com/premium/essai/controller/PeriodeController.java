@@ -11,6 +11,7 @@ import com.premium.essai.model.enums.RecommandationEvaluateur;
 import com.premium.essai.model.enums.StatutEssai;
 import com.premium.essai.model.enums.StatutPeriode;
 import com.premium.essai.repository.PeriodeEvaluationRepository;
+import com.premium.essai.service.NotificationEcheanceService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
@@ -18,6 +19,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -25,6 +28,7 @@ import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -40,6 +44,21 @@ public class PeriodeController {
     );
 
     private final PeriodeEvaluationRepository periodeRepository;
+    private final NotificationEcheanceService notificationEcheanceService;
+
+    // Relance manuelle (bouton « Relancer ») : envoie réellement l'e-mail au responsable concerné ; Admin RH uniquement
+    @PostMapping("/{id}/relance")
+    @Operation(summary = "Relancer le responsable d'une période (e-mail réel)")
+    public ResponseEntity<Map<String, Object>> relancer(@PathVariable Long id) {
+        NotificationEcheanceService.ResultatRelance resultat = notificationEcheanceService.relancerManuellement(id);
+        return ResponseEntity.ok(Map.of("envoye", resultat.envoye(), "destinataire", resultat.destinataire(), "message", resultat.message()));
+    }
+
+    @PostMapping("/relances")
+    @Operation(summary = "Relancer tous les responsables dont une période est en retard")
+    public ResponseEntity<Map<String, Integer>> relancerTout() {
+        return ResponseEntity.ok(notificationEcheanceService.relancerToutesLesPeriodesEnRetard());
+    }
 
     @GetMapping
     @Transactional(readOnly = true)
@@ -55,7 +74,7 @@ public class PeriodeController {
 
     /*
      * Statut affiché d'une période ouverte, selon les jours restants avant l'échéance (indépendant de la tâche automatique) :
-     *   plus de 14 jours : En cours · de 14 à 8 jours : En relance · de 7 jours à l'échéance : En retard
+     *   plus de 14 jours : En cours · de 14 jours jusqu'à l'échéance : En relance
      *   échéance dépassée (1 jour ou plus) : en attente de décision RH.
      * Une période close, décidée ou d'un salarié archivé garde son statut enregistré.
      */
@@ -67,8 +86,7 @@ public class PeriodeController {
         long joursRestants = ChronoUnit.DAYS.between(LocalDate.now(), p.getDateEcheance());
         if (joursRestants < 0) return StatutPeriode.EN_ATTENTE_DECISION_RH.name();
         if (joursRestants > 14) return StatutPeriode.EN_COURS.name();
-        if (joursRestants > 7) return StatutPeriode.EN_RELANCE.name();
-        return StatutPeriode.EN_RETARD_CRITIQUE.name();
+        return StatutPeriode.EN_RELANCE.name();
     }
 
     // Retard visible immédiatement : une période ouverte dont l'échéance est dépassée est affichée en retard,

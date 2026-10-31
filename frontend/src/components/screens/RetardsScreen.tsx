@@ -30,6 +30,17 @@ export default function RetardsScreen() {
   const relances = periodesActives.filter(p => p.statut === 'EN_RELANCE');
   const alertes  = periodesActives.filter(p => p.statut === 'EN_RETARD' || p.statut === 'EN_RELANCE' || p.statut === 'EN_ATTENTE_DECISION_RH');
 
+  // « Dans 5 jours », « Échéance demain »… (jours restants avant l'échéance)
+  const libelleJoursRestants = (date?: string) => {
+    const m = date?.match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if (!m) return 'Relance';
+    const fin = new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
+    const aujourdhui = new Date();
+    aujourdhui.setHours(0, 0, 0, 0);
+    const n = Math.round((fin.getTime() - aujourdhui.getTime()) / 86400000);
+    return n <= 0 ? "Échéance aujourd'hui" : n === 1 ? 'Échéance demain' : `Dans ${n} jours`;
+  };
+
   // 2026-04-05 -> 05/04/2026
   const formatDateFr = (date?: string) => {
     const m = date?.match(/^(\d{4})-(\d{2})-(\d{2})/);
@@ -87,7 +98,7 @@ export default function RetardsScreen() {
           </h2>
           <p className="text-xs text-muted-foreground">
             {isRH
-              ? 'Évaluations en relance (J-14 — avant 2 semaines) et en retard critique (J-7 — avant 1 semaine / dépassées)'
+              ? "Évaluations en relance (de J-14 jusqu'à l'échéance) et dossiers dont l'échéance est dépassée (décision RH)"
               : 'Évaluations de vos collaborateurs nécessitant impérativement votre saisie'
             }
           </p>
@@ -96,7 +107,7 @@ export default function RetardsScreen() {
 
       {/* Legend Planning */}
       <Card className="p-4 bg-white border border-[#E8E8ED] rounded-[20px] shadow-[0_4px_24px_rgba(0,0,0,0.04)]">
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-[11px]">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 text-[11px]">
           <div className="flex items-center justify-between gap-2 p-2.5 rounded-[12px] bg-[#F5F5F7] border border-[#E8E8ED]">
             <div>
               <span className="font-bold text-zinc-900 block">Avant 3 semaines (J-21)</span>
@@ -118,10 +129,19 @@ export default function RetardsScreen() {
           <div className="flex items-center justify-between gap-2 p-2.5 rounded-[12px] bg-[#F5F5F7] border border-[#E8E8ED]">
             <div>
               <span className="font-bold text-zinc-900 block">Avant 1 semaine (J-7)</span>
-              <span className="text-[10px] text-muted-foreground">Alerte critique</span>
+              <span className="text-[10px] text-muted-foreground">Relance urgente</span>
+            </div>
+            <Badge variant="outline" className="text-[10px] bg-amber-50 text-amber-800 border-amber-200">
+              En relance
+            </Badge>
+          </div>
+          <div className="flex items-center justify-between gap-2 p-2.5 rounded-[12px] bg-[#F5F5F7] border border-[#E8E8ED]">
+            <div>
+              <span className="font-bold text-zinc-900 block">Échéance dépassée</span>
+              <span className="text-[10px] text-muted-foreground">Dossier bloqué</span>
             </div>
             <Badge variant="outline" className="text-[10px] bg-rose-50 text-rose-700 border-rose-200">
-              En retard
+              Décision RH
             </Badge>
           </div>
         </div>
@@ -141,7 +161,7 @@ export default function RetardsScreen() {
             </div>
             <div className="flex items-end gap-3">
               <p className="text-4xl font-bold leading-none text-[#1D1D1F]">{alertes.length}</p>
-              <p className="mb-1 text-[11px] font-medium text-[#6E6E73]">En relance + en retard</p>
+              <p className="mb-1 text-[11px] font-medium text-[#6E6E73]">Relances + décisions RH</p>
             </div>
           </div>
           <div className="absolute bottom-0 right-0 h-1 w-16 rounded-tl-full bg-linear-to-r from-[#6E6E73] to-[#1D1D1F]" />
@@ -152,14 +172,14 @@ export default function RetardsScreen() {
           <div className="absolute -right-8 -bottom-8 w-32 h-32 bg-linear-to-br from-amber-50 to-transparent rotate-12 transition-transform duration-500 group-hover:scale-125" />
           <div className="relative z-10">
             <div className="flex items-center justify-between mb-5">
-              <span className="text-[11px] font-semibold uppercase text-[#6E6E73]">En Relance (J-14)</span>
+              <span className="text-[11px] font-semibold uppercase text-[#6E6E73]">En Relance</span>
               <div className="w-11 h-11 rounded-[12px] bg-amber-50 border border-amber-100/80 flex items-center justify-center transition-colors duration-200 group-hover:bg-[#FF9500]">
                 <Clock className="w-5 h-5 text-orange-700 transition-colors group-hover:text-white" strokeWidth={2} />
               </div>
             </div>
             <div className="flex items-end gap-3">
               <p className="text-4xl font-bold leading-none text-[#1D1D1F]">{relances.length}</p>
-              <p className="mb-1 text-[11px] font-medium text-[#6E6E73]">Relance de rappel envoyée</p>
+              <p className="mb-1 text-[11px] font-medium text-[#6E6E73]">De J-14 jusqu'à l'échéance</p>
             </div>
           </div>
           <div className="absolute bottom-0 right-0 h-1 w-16 rounded-tl-full bg-linear-to-r from-[#FF9500] to-[#1D1D1F]" />
@@ -170,14 +190,14 @@ export default function RetardsScreen() {
           <div className="absolute -right-8 -bottom-8 w-32 h-32 bg-linear-to-br from-[#FFF0F3] to-transparent rotate-12 transition-transform duration-500 group-hover:scale-125" />
           <div className="relative z-10">
             <div className="flex items-center justify-between mb-5">
-              <span className="text-[11px] font-semibold uppercase text-[#6E6E73]">En Retard Critique (J-7)</span>
+              <span className="text-[11px] font-semibold uppercase text-[#6E6E73]">Décision RH</span>
               <div className="w-11 h-11 rounded-xl bg-red-50 border border-red-100 flex items-center justify-center transition-colors duration-300 group-hover:bg-red-600">
                 <AlertTriangle className="w-5 h-5 text-red-600 transition-colors group-hover:text-white" strokeWidth={2} />
               </div>
             </div>
             <div className="flex items-end gap-3">
               <p className="text-4xl font-bold leading-none text-[#E4002B]">{retards.length}</p>
-              <p className="mb-1 text-[11px] font-medium text-[#6E6E73]">Escalade DRH requise</p>
+              <p className="mb-1 text-[11px] font-medium text-[#6E6E73]">Échéance dépassée</p>
             </div>
           </div>
           <div className="absolute bottom-0 right-0 h-1 w-16 rounded-tl-full bg-linear-to-r from-[#E4002B] to-[#1D1D1F]" />
@@ -198,14 +218,13 @@ export default function RetardsScreen() {
           <div className="overflow-x-auto">
             <table className="w-full min-w-[1040px] table-fixed border-collapse text-left text-[13px]">
               <colgroup>
-                <col style={{ width: '19%' }} />
-                <col style={{ width: '19%' }} />
-                <col style={{ width: '8%' }} />
-                <col style={{ width: '13%' }} />
-                <col style={{ width: '16%' }} />
+                <col style={{ width: '21%' }} />
+                <col style={{ width: '21%' }} />
                 <col style={{ width: '9%' }} />
-                <col style={{ width: '7%' }} />
+                <col style={{ width: '14%' }} />
+                <col style={{ width: '15%' }} />
                 <col style={{ width: '9%' }} />
+                <col style={{ width: '11%' }} />
               </colgroup>
               <thead>
                 <tr className="border-b border-[#E8E8ED] bg-[#FAFAFC] text-[11px] font-semibold uppercase tracking-[0.06em] text-[#6E6E73]">
@@ -214,7 +233,6 @@ export default function RetardsScreen() {
                   <th className="whitespace-nowrap px-3 py-3">Bilan</th>
                   <th className="whitespace-nowrap px-3 py-3">Échéance</th>
                   <th className="whitespace-nowrap px-3 py-3">Statut</th>
-                  <th className="whitespace-nowrap px-3 py-3">Sévérité</th>
                   <th className="whitespace-nowrap px-3 py-3">Rappel</th>
                   <th className="whitespace-nowrap py-3 pl-3 pr-6 text-right">Actions</th>
                 </tr>
@@ -248,7 +266,7 @@ export default function RetardsScreen() {
                       <td className="px-3 py-3.5 align-middle">
                         <span className="block whitespace-nowrap font-medium tabular-nums">{formatDateFr(p.dateEcheance)}</span>
                         {p.statut === 'EN_RELANCE' ? (
-                          <span className="block whitespace-nowrap text-[12px] font-medium text-amber-700">Relance J-14</span>
+                          <span className="block whitespace-nowrap text-[12px] font-medium text-amber-700">{libelleJoursRestants(p.dateEcheance)}</span>
                         ) : p.joursRetard && p.joursRetard > 0 ? (
                           <span className="block whitespace-nowrap text-[12px] font-semibold text-rose-700">
                             {p.joursRetard} j de retard
@@ -261,11 +279,6 @@ export default function RetardsScreen() {
                         <span className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border px-2.5 py-1 text-[11px] font-semibold ${config.statutClass}`}>
                           <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${config.dotClass}`} />
                           {config.label}
-                        </span>
-                      </td>
-                      <td className="px-3 py-3.5 align-middle">
-                        <span className={`inline-flex whitespace-nowrap rounded-full border px-2.5 py-1 text-[11px] font-semibold ${config.severityClass}`}>
-                          {config.severity}
                         </span>
                       </td>
                       <td className="whitespace-nowrap px-3 py-3.5 align-middle tabular-nums text-[#6E6E73]">

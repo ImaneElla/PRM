@@ -70,7 +70,7 @@ public class MailServiceImpl implements MailService {
 
     @Override
     @Transactional
-    public void sendAlerteRetard(PeriodeEvaluation periode, int joursRetard) {
+    public boolean sendAlerteRetard(PeriodeEvaluation periode, int joursRetard) {
         String destinataire = periode.getResponsable().getEmail();
         String nomSalarie = periode.getSalarie().getFirstName() + " " + periode.getSalarie().getLastName();
         ParametresCompte params = parametresCompteRepository.findFirstByOrderByIdAsc().orElse(null);
@@ -84,7 +84,7 @@ public class MailServiceImpl implements MailService {
             boolean envoye = dispatchEmail(destinataire, rhEmail, objetModele, corpsModele);
             logHistorique(periode, destinataire, periode.getResponsable().getLastName(), RoleDestinataire.RESPONSABLE,
                     objetModele, TypeEmail.EMAIL_3_EN_RETARD, corpsModele, lienEvaluation(periode), envoye);
-            return;
+            return envoye;
         }
 
         String objet = "URGENT : [RETARD CRITIQUE +" + joursRetard + "j] Évaluation de la période d'essai - " + nomSalarie;
@@ -100,6 +100,7 @@ public class MailServiceImpl implements MailService {
 
         boolean succes = dispatchEmail(destinataire, rhEmail, objet, corps);
         logHistorique(periode, destinataire, periode.getResponsable().getLastName(), RoleDestinataire.RESPONSABLE, objet, TypeEmail.EMAIL_3_EN_RETARD, corps, null, succes);
+        return succes;
     }
 
     // Envoyé à TOUS les administrateurs actifs dès qu'un responsable remplit l'évaluation

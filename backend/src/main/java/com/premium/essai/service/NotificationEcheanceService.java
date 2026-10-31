@@ -10,7 +10,9 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
 import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.web.server.ResponseStatusException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -255,6 +257,70 @@ public class NotificationEcheanceService {
         }
         periodeRepository.save(periode);
         return nouveau;
+    }
+
+    public record ResultatRelance(boolean envoye, String destinataire, String message) {
+    }
+
+    /*
+     * Relance manuelle demandée par la RH (bouton « Relancer ») : envoie réellement l'e-mail au responsable concerné
+     * (retard si l'échéance est dépassée, sinon rappel J-7 ou J-14 selon les jours restants) et le résultat reflète
+     * l'envoi réel. Autorisée même si les relances automatiques sont bloquées pour ce dossier.
+     */
+    @Transactional
+    public ResultatRelance relancerManuellement(Long periodeId) {
+        PeriodeEvaluation periode = periodeRepository.findById(periodeId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Période introuvable."));
+        Salarie salarie = periode.getSalarie();
+        if (!salarie.isActif() || STATUTS_CLOTURES.contains(periode.getStatut()) || periode.getDecisionFinale() != null) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Ce dossier est clôturé : aucune relance à envoyer.");
+        }
+        if (periode.getResponsable() == null || periode.getResponsable().getEmail() == null
+                || periode.getResponsable().getEmail().isBlank()) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Aucun responsable avec une adresse e-mail n'est rattaché à ce dossier.");
+        }
+
+        String destinataire = periode.getResponsable().getEmail();
+        long joursRestants = ChronoUnit.DAYS.between(LocalDate.now(), periode.getDateEcheance());
+        boolean envoye;
+        try {
+            envoye = joursRestants < 0 ? mailService.sendAlerteRetard(periode, (int) -joursRestants)
+                    : joursRestants <= 7 ? mailService.sendRappelJ7(periode)
+                    : mailService.sendRappelJ14(periode);
+        } catch (RuntimeException e) {
+            log.error("Relance manuelle de la période {} impossible : {}", periodeId, e.getMessage());
+            envoye = false;
+        }
+
+        if (envoye) {
+            periode.setDateDernierRappel(LocalDate.now());
+            periodeRepository.save(periode);
+            notifierResponsable(periode, "Relance de la RH : " + nomSalarie(periode),
+                    "La Direction RH vous relance au sujet de l'évaluation de " + nomSalarie(periode)
+                            + " (échéance le " + dateFr(periode) + ").");
+            return new ResultatRelance(true, destinataire, "Relance envoyée à " + destinataire + ".");
+        }
+        return new ResultatRelance(false, destinataire,
+                "L'e-mail n'a pas pu être envoyé à " + destinataire + ". Vérifiez la configuration du serveur d'e-mail (MAIL_USERNAME / MAIL_PASSWORD).");
+    }
+
+    /* Relance toutes les périodes dont l'échéance est dépassée (bouton « Relancer tout »). */
+    @Transactional
+    public Map<String, Integer> relancerToutesLesPeriodesEnRetard() {
+        int envoyees = 0;
+        int echecs = 0;
+        for (PeriodeEvaluation periode : periodeRepository.findByDateEcheanceBefore(LocalDate.now())) {
+            if (!periode.getSalarie().isActif() || STATUTS_CLOTURES.contains(periode.getStatut()) || periode.getDecisionFinale() != null
+                    || periode.getResponsable() == null) {
+                continue;
+            }
+            try {
+                if (relancerManuellement(periode.getId()).envoye()) envoyees++; else echecs++;
+            } catch (ResponseStatusException e) {
+                echecs++;
+            }
+        }
+        return Map.of("envoyees", envoyees, "echecs", echecs);
     }
 
     private void notifierResponsable(PeriodeEvaluation periode, String titre, String message) {

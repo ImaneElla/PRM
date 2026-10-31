@@ -355,8 +355,7 @@ export default function PeriodesScreen() {
           >
             <option value="ALL">Tous les statuts</option>
             <option value="EN_COURS">En cours (J-21)</option>
-            <option value="EN_RELANCE">En relance (J-14)</option>
-            <option value="EN_RETARD">En retard (J-7)</option>
+            <option value="EN_RELANCE">En relance (J-14 → échéance)</option>
             <option value="EN_ATTENTE_DECISION_RH">Décision RH (échéance dépassée)</option>
           </select>
         </div>

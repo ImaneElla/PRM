@@ -8,7 +8,7 @@ public interface MailService {
     boolean sendRappelJ21(PeriodeEvaluation periode);
     boolean sendRappelJ14(PeriodeEvaluation periode);
     boolean sendRappelJ7(PeriodeEvaluation periode);
-    void sendAlerteRetard(PeriodeEvaluation periode, int joursRetard);
+    boolean sendAlerteRetard(PeriodeEvaluation periode, int joursRetard);
     /* E-mail à TOUS les administrateurs actifs quand un responsable remplit l'évaluation. */
     void sendNotificationFormulaireRempliAuxAdmins(PeriodeEvaluation periode, RecommandationEvaluateur recommandation);
     /* Confirmation au responsable qui vient de remplir l'évaluation. */

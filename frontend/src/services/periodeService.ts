@@ -53,4 +53,30 @@ export const periodeService = {
     }
     return await response.json();
   },
+
+  /* Relance réelle (e-mail au responsable) d'une période ; `envoye` dit si l'e-mail est vraiment parti. */
+  async relancer(id: number): Promise<{ envoye: boolean; destinataire?: string; message: string }> {
+    const response = await fetch(`${API_BASE_URL}/periodes/${id}/relance`, { method: "POST", headers: authHeaders() });
+    if (!response.ok) throw new Error(await messageErreur(response));
+    return await response.json();
+  },
+
+  /* Relance toutes les périodes dont l'échéance est dépassée. */
+  async relancerTout(): Promise<{ envoyees: number; echecs: number }> {
+    const response = await fetch(`${API_BASE_URL}/periodes/relances`, { method: "POST", headers: authHeaders() });
+    if (!response.ok) throw new Error(await messageErreur(response));
+    return await response.json();
+  },
 };
+
+async function messageErreur(response: Response): Promise<string> {
+  const texte = await response.text();
+  try {
+    const json = JSON.parse(texte);
+    if (typeof json.message === "string" && json.message) return json.message;
+  } catch {
+    // Corps non JSON
+  }
+  if (response.status === 403) return "Action réservée à l'Admin RH.";
+  return `Erreur du serveur (${response.status}). Redémarrez le serveur puis réessayez.`;
+}

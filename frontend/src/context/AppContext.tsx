@@ -110,7 +110,7 @@ interface AppContextType {
   importerResponsables: (fichier: File) => Promise<InvitationResult[]>;
   importerSalaries: (fichier: File) => Promise<ImportSalarieResult[]>;
   updateResponsable: (id: number, data: any) => Promise<void>; deleteResponsable: (id: number) => Promise<boolean>;
-  relancerRetard: (id: number) => void; relancerTousLesRetards: () => void;
+  relancerRetard: (id: number) => Promise<void>; relancerTousLesRetards: () => Promise<void>;
   submitEvaluation: (data: any) => Promise<void>; saveAIAnalysis: (periodeId: number, analysisResult: any) => void; validerDecisionRH: (id: number, decision: DecisionPeriode, motif: string) => Promise<void>;
   triggerCronBatch0900: () => { emailsCount: number; retardsCount: number };
   markNotificationAsRead: (id: number) => void; markAllNotificationsAsRead: () => void;
@@ -873,8 +873,29 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     return true;
   };
 
-  const relancerRetard = (periodeId: number) => { showToast('Relance envoyée.'); };
-  const relancerTousLesRetards = () => { showToast('Relances envoyées.'); };
+  // Relance réelle : l'e-mail est envoyé par le serveur, le message reflète le résultat (envoyé ou échec)
+  const relancerRetard = async (periodeId: number) => {
+    if (isDemoMode) { showToast('Mode démo : aucune relance réelle envoyée.'); return; }
+    try {
+      const resultat = await periodeService.relancer(periodeId);
+      showToast(resultat.envoye ? resultat.message : `Échec : ${resultat.message}`);
+      await refreshDashboardData();
+    } catch (error) {
+      showToast(`Échec : ${error instanceof Error ? error.message : 'la relance a échoué.'}`);
+    }
+  };
+  const relancerTousLesRetards = async () => {
+    if (isDemoMode) { showToast('Mode démo : aucune relance réelle envoyée.'); return; }
+    try {
+      const { envoyees, echecs } = await periodeService.relancerTout();
+      if (envoyees === 0 && echecs === 0) showToast('Aucune relance à envoyer.');
+      else if (envoyees === 0) showToast(`Échec : aucune relance n'a pu être envoyée (${echecs} échec(s)). Vérifiez la configuration e-mail.`);
+      else showToast(`${envoyees} relance(s) envoyée(s)${echecs > 0 ? `, ${echecs} échec(s)` : ''}.`);
+      await refreshDashboardData();
+    } catch (error) {
+      showToast(`Échec : ${error instanceof Error ? error.message : 'les relances ont échoué.'}`);
+    }
+  };
 
   const saveAIAnalysis = (periodeId: number, analysisResult: any) => {
     setAiAnalysesMap(prev => ({ ...prev, [periodeId]: analysisResult }));

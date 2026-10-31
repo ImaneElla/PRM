@@ -40,6 +40,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/dashboard/audit-emails").hasRole("ADMIN_RH")
                         .requestMatchers("/api/test/**").hasRole("ADMIN_RH")
                         .requestMatchers(HttpMethod.PUT, "/api/parametres").hasRole("ADMIN_RH")
+                        .requestMatchers(HttpMethod.POST, "/api/periodes/**").hasRole("ADMIN_RH")
                         .requestMatchers("/api/parametres/modeles-email/**").hasRole("ADMIN_RH")
                         .requestMatchers(HttpMethod.POST, "/api/evaluations/*/decision-directe-rh").hasRole("ADMIN_RH")
                         // Gestion des salariés (création, import, suppression, société, démission) : Admin RH uniquement.
