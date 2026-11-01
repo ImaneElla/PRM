@@ -1,5 +1,6 @@
 package com.premium.essai.controller;
 
+import com.premium.essai.config.HeureMaroc;
 import com.premium.essai.service.NotificationEcheanceService;
 import com.premium.essai.service.NotificationEcheanceService.RapportExecution;
 import io.swagger.v3.oas.annotations.Operation;
@@ -26,7 +27,7 @@ public class TestNotificationController {
             @RequestParam(required = false, defaultValue = "true") boolean forcer,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dateSimulation
     ) {
-        LocalDate date = (dateSimulation != null) ? dateSimulation : LocalDate.now();
+        LocalDate date = (dateSimulation != null) ? dateSimulation : HeureMaroc.aujourdhui();
         RapportExecution rapport = notificationEcheanceService.traiterEcheances(date, forcer);
         return ResponseEntity.ok(rapport);
     }

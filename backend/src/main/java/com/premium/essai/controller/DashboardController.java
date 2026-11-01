@@ -37,7 +37,7 @@ public class DashboardController {
         long totalEnCours = periodeRepository.countByStatut(StatutPeriode.EN_COURS);
         long totalEnRelance = periodeRepository.countByStatut(StatutPeriode.EN_RELANCE);
         // Retards réels : période ouverte dont l'échéance est dépassée (constatée ou en cours de constat)
-        long totalEnRetard = periodeRepository.findByDateEcheanceBefore(java.time.LocalDate.now()).stream()
+        long totalEnRetard = periodeRepository.findByDateEcheanceBefore(com.premium.essai.config.HeureMaroc.aujourdhui()).stream()
                 .filter(p -> p.getSalarie().isActif() && p.getDecisionFinale() == null
                         && !java.util.EnumSet.of(StatutPeriode.COMPLETEE, StatutPeriode.VALIDE, StatutPeriode.VALIDEE_RH,
                                 StatutPeriode.ROMPU, StatutPeriode.RUPTURE, StatutPeriode.RENOUVELE, StatutPeriode.TERMINE)

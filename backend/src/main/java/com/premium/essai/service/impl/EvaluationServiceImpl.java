@@ -1,5 +1,6 @@
 package com.premium.essai.service.impl;
 
+import com.premium.essai.config.HeureMaroc;
 import com.premium.essai.dto.DecisionRHRequestDTO;
 import com.premium.essai.dto.EvaluationDetailRequestDTO;
 import com.premium.essai.dto.EvaluationDetailResponseDTO;
@@ -44,7 +45,7 @@ public class EvaluationServiceImpl implements EvaluationService {
         PeriodeEvaluation periode = periodeRepository.findByTokenAccesSalarie(token)
                 .orElseThrow(() -> new RuntimeException("Lien d'evaluation invalide ou expire."));
 
-        boolean estDepasse = periode.getDateEcheance() != null && LocalDate.now().isAfter(periode.getDateEcheance().plusDays(com.premium.essai.service.NotificationEcheanceService.DELAI_APRES_ECHEANCE_JOURS));
+        boolean estDepasse = periode.getDateEcheance() != null && HeureMaroc.aujourdhui().isAfter(periode.getDateEcheance().plusDays(com.premium.essai.service.NotificationEcheanceService.DELAI_APRES_ECHEANCE_JOURS));
         boolean estEnAttenteRH = periode.getStatut() == StatutPeriode.EN_ATTENTE_DECISION_RH;
 
         if ((estDepasse || estEnAttenteRH) && periode.getStatut() != StatutPeriode.COMPLETEE) {
@@ -77,7 +78,7 @@ public class EvaluationServiceImpl implements EvaluationService {
             throw new IllegalStateException("Une décision RH a déjà été enregistrée pour cette période : l'évaluation ne peut plus être modifiée.");
         }
 
-        boolean estDepasse = periode.getDateEcheance() != null && LocalDate.now().isAfter(periode.getDateEcheance().plusDays(com.premium.essai.service.NotificationEcheanceService.DELAI_APRES_ECHEANCE_JOURS));
+        boolean estDepasse = periode.getDateEcheance() != null && HeureMaroc.aujourdhui().isAfter(periode.getDateEcheance().plusDays(com.premium.essai.service.NotificationEcheanceService.DELAI_APRES_ECHEANCE_JOURS));
         boolean estEnAttenteRH = periode.getStatut() == StatutPeriode.EN_ATTENTE_DECISION_RH;
 
         if (estDepasse || estEnAttenteRH) {
@@ -102,7 +103,7 @@ public class EvaluationServiceImpl implements EvaluationService {
             detail.setCommentairesEvaluateur(dto.getCommentairesEvaluateur());
             detail.setRecommandationEvaluateur(dto.getRecommandationEvaluateur());
             detail.setJsonReponsesCriteres(dto.getJsonReponsesCriteres());
-            detail.setDateSoumission(LocalDate.now());
+            detail.setDateSoumission(HeureMaroc.aujourdhui());
         } else {
             detail = EvaluationDetail.builder()
                     .periodeEvaluation(periode)
@@ -115,14 +116,14 @@ public class EvaluationServiceImpl implements EvaluationService {
                     .commentairesEvaluateur(dto.getCommentairesEvaluateur())
                     .recommandationEvaluateur(dto.getRecommandationEvaluateur())
                     .jsonReponsesCriteres(dto.getJsonReponsesCriteres())
-                    .dateSoumission(LocalDate.now())
+                    .dateSoumission(HeureMaroc.aujourdhui())
                     .build();
         }
 
         EvaluationDetail savedDetail = evaluationDetailRepository.save(detail);
 
         periode.setNoteGlobale(noteGlobale);
-        periode.setDateValidationEvaluateur(LocalDate.now());
+        periode.setDateValidationEvaluateur(HeureMaroc.aujourdhui());
         periode.setStatut(StatutPeriode.COMPLETEE);
         periodeRepository.save(periode);
 
@@ -134,12 +135,12 @@ public class EvaluationServiceImpl implements EvaluationService {
                 periodeSuivante = creerPeriodeSuivante(salarie);
             } else {
                 salarie.setStatutEssai(StatutEssai.VALIDE);
-                salarie.setDateFinPrevisionnelle(LocalDate.now());
+                salarie.setDateFinPrevisionnelle(HeureMaroc.aujourdhui());
                 salarieRepository.save(salarie);
             }
         } else if (recommandation == RecommandationEvaluateur.RUPTURE_CONTRAT) {
             salarie.setStatutEssai(StatutEssai.RUPTURE);
-            salarie.setDateFinPrevisionnelle(LocalDate.now());
+            salarie.setDateFinPrevisionnelle(HeureMaroc.aujourdhui());
             salarie.setActif(false);
             salarie.setBloqueEmails(true);
             salarieRepository.save(salarie);
@@ -198,7 +199,7 @@ public class EvaluationServiceImpl implements EvaluationService {
             throw new IllegalStateException("Une décision a déjà été enregistrée pour cette période.");
         }
 
-        LocalDate aujourdhui = LocalDate.now();
+        LocalDate aujourdhui = HeureMaroc.aujourdhui();
         if (periode.getNoteGlobale() == null) periode.setNoteGlobale(3.0);
         if (periode.getDateValidationEvaluateur() == null) periode.setDateValidationEvaluateur(aujourdhui);
         periode.setDateValidationRh(aujourdhui);

@@ -121,6 +121,10 @@ export async function POST(request: Request) {
   const ollamaUrl = (process.env.OLLAMA_URL || 'http://localhost:11434').replace(/\/$/, '');
   const modele = process.env.OLLAMA_MODEL || 'llama3.2';
 
+  const delaiMs = Number(process.env.OLLAMA_TIMEOUT_MS) || 2000;
+  const debut = Date.now();
+  console.log(`[ai-evaluate] Requête vers ${ollamaUrl}/api/chat (modèle ${modele}, délai ${delaiMs} ms, ${evaluation.criteres.length} critères)`);
+
   try {
     const response = await fetch(`${ollamaUrl}/api/chat`, {
       method: 'POST',
@@ -128,6 +132,8 @@ export async function POST(request: Request) {
       body: JSON.stringify({
         model: modele,
         stream: false,
+        // Garde le modèle en mémoire : évite ~8 s de rechargement à chaque analyse
+        keep_alive: '30m',
         // Ollama contraint la réponse à ce schéma JSON
         format: SCHEMA_ANALYSE,
         options: { temperature: 0.2, num_predict: 1400 },
@@ -135,17 +141,18 @@ export async function POST(request: Request) {
           {
             role: 'system',
             content:
-              "Tu es un expert RH de haut niveau. À partir des 24 critères d'évaluation et commentaires remplis par le responsable, tu dois obligatoirement générer :\n1. L'identification précise des 3 points forts clés.\n2. La détection des 3 axes d'amélioration prioritaires et la moyenne globale calculée.\n3. Une synthèse générale concise présentée sous forme de tableau (1 Salarié, 1 Points forts, 2 Axes d'amélioration, 3 Synthèse globale).\n4. Un plan d'accompagnement en 3 actions concrètes.\nRéponds uniquement en français avec un ton professionnel et constructif, au format JSON demandé.",
+              "Tu es un expert RH de haut niveau. À partir des 24 critères d'évaluation et commentaires remplis par le responsable, tu dois obligatoirement générer :\n1. L'identification précise des 3 points forts clés.\n2. La détection des 3 axes d'amélioration prioritaires et la moyenne globale calculée.\n3. Une synthèse générale concise présentée sous forme de tableau (1 Salarié, 1 Points forts, 2 Axes d'amélioration, 3 Synthèse globale).\n4. Un plan d'accompagnement en 3 actions concrètes.\nRéponds uniquement en français, ton professionnel, au format JSON demandé. Sois très concis : chaque élément fait une phrase courte (20 mots maximum).",
           },
-          { role: 'user', content: JSON.stringify({ ...evaluation, moyenneCalculee }) },
+          { role: 'user', content: JSON.stringify(donneesPourModele(evaluation, moyenneCalculee)) },
         ],
       }),
       // Délai d'attente : 2 s par défaut, modifiable avec OLLAMA_TIMEOUT_MS
-      signal: AbortSignal.timeout(Number(process.env.OLLAMA_TIMEOUT_MS) || 2000),
+      signal: AbortSignal.timeout(delaiMs),
     });
 
     if (!response.ok) {
-      throw new Error(`Ollama a répondu ${response.status}`);
+      const detail = (await response.text().catch(() => '')).slice(0, 200);
+      throw new Error(`Ollama a répondu ${response.status} ${detail}`);
     }
 
     const completion = await response.json();
@@ -153,15 +160,22 @@ export async function POST(request: Request) {
     if (!Array.isArray(parsed.pointsForts) || !Array.isArray(parsed.axesAmelioration)) {
       throw new Error('Réponse du modèle incomplète');
     }
+    console.log(`[ai-evaluate] Analyse reçue en ${Date.now() - debut} ms (${completion.eval_count ?? '?'} jetons générés)`);
     return NextResponse.json({
       ...parsed,
       source: 'ia',
       // La moyenne reste celle calculée à partir des notes, pas celle « estimée » par le modèle
       moyenneGlobale: moyenneCalculee,
     });
-  } catch {
-    // Ollama arrêté, modèle absent ou réponse invalide : résultat générique, signalé comme tel
-    return NextResponse.json(modeleLocal(evaluation, moyenneCalculee));
+  } catch (erreur) {
+    const expire = erreur instanceof Error && (erreur.name === 'TimeoutError' || erreur.name === 'AbortError');
+    const raison = erreur instanceof Error ? `${erreur.name}: ${erreur.message}` : String(erreur);
+    console.error(`[ai-evaluate] Échec après ${Date.now() - debut} ms (${ollamaUrl}, modèle ${modele}) : ${raison}`);
+    // Pas de résultat factice : l'erreur est renvoyée à l'écran
+    const message = expire
+      ? `Ollama n'a pas répondu en ${Math.round(delaiMs / 1000)} s. Augmentez OLLAMA_TIMEOUT_MS ou utilisez un modèle plus léger.`
+      : `Ollama est inaccessible ou a renvoyé une réponse invalide (${raison}).`;
+    return NextResponse.json({ error: message }, { status: 502 });
   }
 }
 
@@ -201,55 +215,15 @@ const SCHEMA_ANALYSE = {
   required: ['moyenneGlobale', 'pointsForts', 'axesAmelioration', 'planAccompagnement', 'syntheseTableau'],
 };
 
-// Texte générique quand le modèle n'est pas disponible : seuls la moyenne et le classement des notes sont calculés
-function modeleLocal(evaluation: EvaluationInput, moyenneCalculee: number) {
-  const sortedCriteres = [...evaluation.criteres]
-    .filter(c => !c.note.includes('Non évalué'))
-    .sort((a, b) => (parseFloat(b.note) || 0) - (parseFloat(a.note) || 0));
-
-  const topPoints = sortedCriteres.slice(0, 3).map(c => `${c.nom} (${c.note}) - Démontre une solide régularité opérationnelle.`);
-  const bottomPoints = [...sortedCriteres].reverse().slice(0, 3).map(c => `${c.nom} (${c.note}) - Nécessite un suivi et un accompagnement ciblé.`);
-
+// Données envoyées au modèle : on retire les champs vides pour réduire le temps de traitement
+function donneesPourModele(evaluation: EvaluationInput, moyenneCalculee: number) {
   return {
-    source: 'modele-local',
-    moyenneGlobale: moyenneCalculee,
-    pointsForts: topPoints.length > 0 ? topPoints : [
-      "Compréhension des objectifs et intégration professionnelle",
-      "Rigueur dans l'exécution et respect des délais",
-      "Sens de la collaboration et esprit d'équipe"
-    ],
-    axesAmelioration: bottomPoints.length > 0 ? bottomPoints : [
-      "Développement de l'autonomie sur les dossiers complexes",
-      "Communication proactive lors d'imprévus ou de blocages",
-      "Approfondissement de la maîtrise des outils métier"
-    ],
-    planAccompagnement: [
-      {
-        action: "Point d'étape bimensuel avec le manager",
-        objectif: "Suivre la montée en compétences et lever les blocages",
-        echeance: "1 mois",
-        moyens: "Entretien N+1 (30 min tous les 15j)"
-      },
-      {
-        action: "Formation pratique et partage de bonnes pratiques",
-        objectif: "Consolider la méthodologie et l'autonomie",
-        echeance: "2 mois",
-        moyens: "Binôme tuteur / module e-learning"
-      },
-      {
-        action: "Bilan intermédiaire de progression",
-        objectif: "Mesurer l'atteinte des jalons fixés",
-        echeance: "3 mois",
-        moyens: "Fiche d'objectifs réajustée"
-      }
-    ],
-    syntheseTableau: [
-      {
-        salarie: evaluation.salarieName || 'Collaborateur',
-        point1_pointsForts: topPoints[0] || 'Maîtrise technique et sens du service',
-        point2_axesAmelioration: bottomPoints[0] || 'Autonomie et gestion des priorités',
-        point3_syntheseMoyenne: `Moyenne : ${moyenneCalculee}/5 — Profil en progression favorable avec potentiel confirmé.`
-      }
-    ]
+    salarie: evaluation.salarieName,
+    poste: evaluation.poste,
+    moyenneCalculee,
+    criteres: evaluation.criteres.map(c => (c.commentaire ? `${c.nom} : ${c.note} — ${c.commentaire}` : `${c.nom} : ${c.note}`)),
+    appreciationGenerale: evaluation.appreciationGenerale || undefined,
+    pointsForts: evaluation.pointsForts || undefined,
+    axesAmelioration: evaluation.axesAmelioration || undefined,
   };
 }

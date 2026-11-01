@@ -10,10 +10,10 @@ import com.premium.essai.model.enums.RoleDestinataire;
 import com.premium.essai.model.enums.UserRole;
 import com.premium.essai.model.enums.StatutEmail;
 import com.premium.essai.model.enums.TypeEmail;
-import com.premium.essai.repository.HistoriqueEmailRepository;
 import com.premium.essai.repository.ParametresCompteRepository;
 import com.premium.essai.repository.TemplateEmailRepository;
 import com.premium.essai.repository.UserRepository;
+import com.premium.essai.service.HistoriqueEmailService;
 import com.premium.essai.service.MailService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -40,7 +40,7 @@ public class MailServiceImpl implements MailService {
 
     private final JavaMailSender mailSender;
     private final TemplateEmailRepository templateEmailRepository;
-    private final HistoriqueEmailRepository historiqueEmailRepository;
+    private final HistoriqueEmailService historiqueEmailService;
     private final ParametresCompteRepository parametresCompteRepository;
     private final UserRepository userRepository;
 
@@ -447,6 +447,12 @@ public class MailServiceImpl implements MailService {
                 .lienSecurise(lien)
                 .build();
 
-        historiqueEmailRepository.save(histo);
+        // Transaction indépendante : si l'historique ne peut pas être écrit, l'e-mail est déjà parti et l'étape du rappel reste validée
+        try {
+            historiqueEmailService.enregistrer(histo);
+        } catch (RuntimeException e) {
+            log.error("Historique e-mail non enregistré (e-mail à {} : « {} », statut {}) : {}",
+                    dest, objet, histo.getStatut(), e.toString(), e);
+        }
     }
 }

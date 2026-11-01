@@ -29,6 +29,10 @@ spring:
           auth: true
           starttls:
             enable: true
+          # Délais en millisecondes : un serveur SMTP qui ne répond pas ne doit pas bloquer les tâches planifiées
+          connectiontimeout: 10000
+          timeout: 15000
+          writetimeout: 15000
 
 application:
   frontend-url: ${FRONTEND_URL:http://localhost:3000}

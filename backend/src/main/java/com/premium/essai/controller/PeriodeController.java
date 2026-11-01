@@ -1,5 +1,6 @@
 package com.premium.essai.controller;
 
+import com.premium.essai.config.HeureMaroc;
 import com.premium.essai.dto.PeriodeResponseDTO;
 import com.premium.essai.model.EvaluationDetail;
 import com.premium.essai.model.PeriodeEvaluation;
@@ -83,7 +84,7 @@ public class PeriodeController {
                 || p.getDecisionFinale() != null || !p.getSalarie().isActif()) {
             return p.getStatut().name();
         }
-        long joursRestants = ChronoUnit.DAYS.between(LocalDate.now(), p.getDateEcheance());
+        long joursRestants = ChronoUnit.DAYS.between(HeureMaroc.aujourdhui(), p.getDateEcheance());
         if (joursRestants < -NotificationEcheanceService.DELAI_APRES_ECHEANCE_JOURS) return StatutPeriode.EN_ATTENTE_DECISION_RH.name();
         // Échéance dépassée depuis 14 jours ou moins : encore « En relance » (le formulaire reste ouvert)
         if (joursRestants < 0) return StatutPeriode.EN_RELANCE.name();
@@ -96,7 +97,7 @@ public class PeriodeController {
     // sans attendre le prochain passage de la détection (toutes les 5 minutes)
     private boolean enRetardNonConstate(PeriodeEvaluation p) {
         return p.getDateEcheance() != null
-                && p.getDateEcheance().isBefore(LocalDate.now())
+                && p.getDateEcheance().isBefore(HeureMaroc.aujourdhui())
                 && !STATUTS_CLOTURES.contains(p.getStatut())
                 && p.getDecisionFinale() == null
                 && p.getSalarie().isActif();
@@ -126,7 +127,7 @@ public class PeriodeController {
                 .statut(statutAffiche(p))
                 .decision(STATUTS_CLOTURES.contains(p.getStatut()) ? decisionPeriode(p) : null)
                 .joursRetard(enRetardNonConstate(p)
-                        ? Integer.valueOf((int) ChronoUnit.DAYS.between(p.getDateEcheance(), LocalDate.now()))
+                        ? Integer.valueOf((int) ChronoUnit.DAYS.between(p.getDateEcheance(), HeureMaroc.aujourdhui()))
                         : p.getJoursRetard())
                 .noteGlobale(p.getNoteGlobale())
                 .motifDecision(p.getMotifDecision())
