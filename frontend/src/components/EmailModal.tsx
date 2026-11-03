@@ -31,7 +31,7 @@ export default function EmailModal() {
                 </span>
                 {selectedEmail.batchCron && (
                   <Badge variant="appleRed" className="text-[10px] font-mono px-2 py-0">
-                    Batch 09:00
+                    Automatique
                   </Badge>
                 )}
               </div>

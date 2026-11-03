@@ -79,7 +79,7 @@ export default function EmailsScreen() {
             </h2>
           </div>
           <p className="text-xs text-muted-foreground mt-0.5">
-            Suivi temps réel des communications automatisées du Cron 09:00 et des relances manuelles (/api/dashboard/audit-emails).
+            Suivi temps réel des communications automatiques et des relances manuelles (/api/dashboard/audit-emails).
           </p>
         </div>
 
@@ -157,7 +157,7 @@ export default function EmailsScreen() {
                   <Zap className="w-5 h-5 text-[#E4002B] group-hover:text-white transition-colors" strokeWidth={2} />
                 </div>
                 <span className="text-[11px] font-semibold tracking-[0.08em] uppercase text-[#6E6E73]">
-                  Batch Cron (09:00)
+                  Automatique
                 </span>
               </div>
               <div className="w-8 h-8 rounded-full bg-[#F5F5F7] flex items-center justify-center group-hover:bg-[#E4002B] transition-colors duration-200">
@@ -330,7 +330,7 @@ export default function EmailsScreen() {
                       {mail.batchCron ? (
                         <span className="inline-flex items-center gap-1 text-[10px] font-mono font-semibold px-2 py-0.5 rounded-md bg-red-100 text-red-700 border border-red-200/60">
                           <Zap className="w-3 h-3 text-red-600 fill-red-600" strokeWidth={1.5} />
-                          Cron 09:00
+                          Automatique
                         </span>
                       ) : (
                         <span className="inline-flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-md bg-[#F5F5F7] text-muted-foreground border border-[#E8E8ED]">

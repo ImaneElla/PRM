@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useLayoutEffect, useRef } from 'react';
 import { useApp } from '../../context/AppContext';
 import {
   Printer,
@@ -38,6 +38,37 @@ const getToday = () => {
   const day = String(d.getDate()).padStart(2, '0');
   return `${y}-${m}-${day}`;
 };
+
+// Zone de texte qui s'agrandit selon son contenu : tout le texte reste visible, sans barre de défilement
+function TexteAuto({ className = '', ...props }: React.TextareaHTMLAttributes<HTMLTextAreaElement> & { value: string }) {
+  const ref = useRef<HTMLTextAreaElement>(null);
+  useLayoutEffect(() => {
+    const champ = ref.current;
+    if (!champ) return;
+    champ.style.height = 'auto';
+    champ.style.height = `${champ.scrollHeight + champ.offsetHeight - champ.clientHeight}px`; // bordures comprises
+  }, [props.value]);
+  return (
+    <textarea
+      ref={ref}
+      {...props}
+      className={`texte-formulaire block resize-none overflow-hidden whitespace-pre-wrap wrap-break-word ${className}`}
+    />
+  );
+}
+
+// Commentaire d'un critère : le texte passe à la ligne et la case s'agrandit selon sa longueur (rien n'est coupé)
+function CommentaireCritere({ value, onChange }: { value: string; onChange: (value: string) => void }) {
+  return (
+    <TexteAuto
+      rows={1}
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      placeholder="..."
+      className="w-full text-xs leading-snug px-1.5 py-0.5 bg-transparent border-b border-transparent hover:border-zinc-300 focus:border-black outline-none"
+    />
+  );
+}
 
 interface CriteriaTableProps {
   title: string;
@@ -97,13 +128,10 @@ function CriteriaTable({
                     ))}
                   </div>
                 </td>
-                <td className="p-1.5">
-                  <input
-                    type="text"
+                <td className="p-1.5 align-middle">
+                  <CommentaireCritere
                     value={comments[item.id] || ''}
-                    onChange={(e) => onComment(item.id, e.target.value)}
-                    placeholder="..."
-                    className="w-full text-xs px-1.5 py-0.5 border-b border-transparent hover:border-zinc-300 focus:border-black outline-none"
+                    onChange={(val) => onComment(item.id, val)}
                   />
                 </td>
               </tr>
@@ -758,7 +786,7 @@ export default function FormulaireEvaluationScreen({ periodeId, onClose }: { per
 
                 <div className="space-y-1">
                   <div className="text-xs font-bold">Commentaires synthétiques sur les objectifs :</div>
-                  <textarea
+                  <TexteAuto
                     rows={2}
                     value={commentairesObjectifs}
                     onChange={(e) => setCommentairesObjectifs(e.target.value)}
@@ -843,7 +871,7 @@ export default function FormulaireEvaluationScreen({ periodeId, onClose }: { per
                   <label className="font-bold block text-[#1D1D1F]">
                     Appréciation générale des performances :
                   </label>
-                  <textarea
+                  <TexteAuto
                     rows={2}
                     value={appreciationGenerale}
                     onChange={(e) => setAppreciationGenerale(e.target.value)}
@@ -853,7 +881,7 @@ export default function FormulaireEvaluationScreen({ periodeId, onClose }: { per
 
                 <div className="space-y-1">
                   <label className="font-bold block text-[#1D1D1F]">Principaux points forts observés :</label>
-                  <textarea
+                  <TexteAuto
                     rows={2}
                     value={pointsForts}
                     onChange={(e) => setPointsForts(e.target.value)}
@@ -863,7 +891,7 @@ export default function FormulaireEvaluationScreen({ periodeId, onClose }: { per
 
                 <div className="space-y-1">
                   <label className="font-bold block text-[#1D1D1F]">Axes d’amélioration identifiés :</label>
-                  <textarea
+                  <TexteAuto
                     rows={2}
                     value={axesAmelioration}
                     onChange={(e) => setAxesAmelioration(e.target.value)}
@@ -882,7 +910,7 @@ export default function FormulaireEvaluationScreen({ periodeId, onClose }: { per
               </div>
 
               <div className="p-3 border-b border-black">
-                <textarea
+                <TexteAuto
                   rows={2}
                   value={recommandationCommentaire}
                   onChange={(e) => setRecommandationCommentaire(e.target.value)}
@@ -932,7 +960,7 @@ export default function FormulaireEvaluationScreen({ periodeId, onClose }: { per
                     <label className="font-bold text-red-700 block">
                       Motif de l&apos;arrêt de contrat (facultatif) :
                     </label>
-                    <textarea
+                    <TexteAuto
                       rows={2}
                       value={recommandationCommentaire}
                       onChange={(e) => setRecommandationCommentaire(e.target.value)}

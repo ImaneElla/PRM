@@ -515,6 +515,13 @@ html {
   .app-main textarea {
     font-size: 16px;
   }
+
+  /* Sur ordinateur (souris), les commentaires du formulaire gardent la taille du tableau */
+  @media (hover: hover) and (pointer: fine) {
+    .app-main textarea.texte-formulaire {
+      font-size: 12px;
+    }
+  }
 }
 
 @media (max-width: 767px) {

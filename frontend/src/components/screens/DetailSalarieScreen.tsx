@@ -379,7 +379,7 @@ export default function DetailSalarieScreen() {
             Parcours Chronologique & Periode de la Période d&apos;Essai
           </h3>
           <span className="text-xs text-muted-foreground font-mono">
-            Automatisé par le Cron 09:00
+            Automatique
           </span>
         </div>
 
@@ -757,7 +757,7 @@ export default function DetailSalarieScreen() {
                         <span className="text-xs font-semibold text-foreground tracking-tight">{email.objet}</span>
                         {email.batchCron && (
                           <Badge variant="appleRed" className="text-[10px] px-1.5 py-0">
-                            Cron 09:00
+                            Automatique
                           </Badge>
                         )}
                       </div>

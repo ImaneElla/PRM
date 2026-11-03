@@ -18,6 +18,18 @@ interface BilanAnalyseIAProps {
 
 const etiquette = 'text-xs text-[#6E6E73]';
 
+// Liste à puces d'une cellule du tableau de synthèse
+function Liste({ elements }: { elements?: string[] }) {
+  if (!elements || elements.length === 0) return <span className="text-[#86868B]">—</span>;
+  return (
+    <ul className="list-disc space-y-1 pl-3.5 wrap-break-word">
+      {elements.map((element, i) => (
+        <li key={i}>{element}</li>
+      ))}
+    </ul>
+  );
+}
+
 // Card « Analyse IA » : même structure que la card du bilan, indépendante, avec son propre bouton « Consulter ».
 // Elle est liée à l'évaluation de ce seul bilan.
 export default function BilanAnalyseIA({ periode, titre, evaluation, labelBouton }: BilanAnalyseIAProps) {
@@ -75,14 +87,33 @@ export default function BilanAnalyseIA({ periode, titre, evaluation, labelBouton
             <Jauge note={moyenne ?? 0} />
           </div>
 
-          <div className="grid grid-cols-2 gap-4 py-4">
-            <div>
-              <p className={etiquette}>Points forts</p>
-              <p className="mt-1 text-lg font-semibold text-[#1D1D1F]">{analyse ? analyse.pointsForts?.length ?? 0 : '—'}</p>
-            </div>
-            <div>
-              <p className={etiquette}>Axes d&apos;amélioration</p>
-              <p className="mt-1 text-lg font-semibold text-[#1D1D1F]">{analyse ? analyse.axesAmelioration?.length ?? 0 : '—'}</p>
+          {/* Synthèse générale en tableau : le contenu réel de l'analyse */}
+          <div className="space-y-2 py-4">
+            <p className="text-xs font-semibold uppercase tracking-wider text-[#1D1D1F]">Synthèse générale en tableau</p>
+            <div className="overflow-x-auto rounded-xl border border-[#E8E8ED]">
+              <table className="w-full table-fixed border-collapse text-left text-[11px] leading-snug">
+                <thead>
+                  <tr className="bg-[#1D1D1F] text-[10px] font-semibold uppercase tracking-wider text-white">
+                    <th className="w-1/3 border-r border-[#333] px-2.5 py-2">Points forts</th>
+                    <th className="w-1/3 border-r border-[#333] px-2.5 py-2">Axes d&apos;amélioration</th>
+                    <th className="w-1/3 bg-[#E4002B]/80 px-2.5 py-2">Synthèse &amp; moyenne</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr className="align-top text-[#1D1D1F]">
+                    <td className="border-r border-[#E8E8ED] px-2.5 py-2">
+                      <Liste elements={analyse.pointsForts} />
+                    </td>
+                    <td className="border-r border-[#E8E8ED] px-2.5 py-2">
+                      <Liste elements={analyse.axesAmelioration} />
+                    </td>
+                    <td className="px-2.5 py-2 wrap-break-word">
+                      {analyse.syntheseTableau?.[0]?.point3_syntheseMoyenne ||
+                        (moyenne !== null ? `Moyenne : ${moyenne}/5` : '—')}
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
           </div>
 

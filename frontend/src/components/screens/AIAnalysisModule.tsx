@@ -563,14 +563,9 @@ ${plan
                     <div className="p-1.5 rounded-[8px] bg-[#E4002B] text-white">
                       <Table2 className="w-4 h-4" />
                     </div>
-                    <div>
-                      <h4 className="text-xs font-semibold uppercase tracking-wider text-[#1D1D1F]">
-                        3. Synthèse Générale en Tableau
-                      </h4>
-                      <p className="text-xs text-[#6E6E73]">
-                        Format managérial : | Salarié | 1. Points Forts | 2. Axes d&apos;Amélioration | 3. Synthèse &amp; Moyenne |
-                      </p>
-                    </div>
+                    <h4 className="text-xs font-semibold uppercase tracking-wider text-[#1D1D1F]">
+                      3. Synthèse Générale en Tableau
+                    </h4>
                   </div>
 
                   <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-[#F5F5F7] text-[#6E6E73] border border-[#E8E8ED]">

@@ -19,9 +19,7 @@ import {
   TriangleAlert,
   LayoutList,
   Eye,
-  Download,
 } from "lucide-react";
-import { exporterSalariesExcel } from "@/lib/telechargerModele";
 
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -133,24 +131,6 @@ export default function SalariesListScreen() {
       showToast(error instanceof Error ? error.message : "Impossible d'importer le fichier.");
     } finally {
       setImportEnCours(false);
-    }
-  };
-
-  // Export Excel des salariés enregistrés en base (actifs), généré par le serveur
-  const [exportEnCours, setExportEnCours] = useState(false);
-  const handleExportExcel = async () => {
-    setExportEnCours(true);
-    try {
-      const nombre = await exporterSalariesExcel();
-      showToast(
-        nombre === 0
-          ? "Aucun salarié actif à exporter."
-          : `${nombre} salarié${nombre > 1 ? "s exportés" : " exporté"} dans le fichier Excel.`
-      );
-    } catch (error) {
-      showToast(error instanceof Error ? error.message : "Impossible d'exporter les salariés.");
-    } finally {
-      setExportEnCours(false);
     }
   };
 
@@ -288,16 +268,6 @@ export default function SalariesListScreen() {
             >
               <Upload className="w-4 h-4" strokeWidth={1.75} />
               <span>{importEnCours ? "Import en cours..." : "Importer un fichier Excel"}</span>
-            </Button>
-            <Button
-              variant="outline"
-              onClick={handleExportExcel}
-              disabled={exportEnCours}
-              title="Télécharger la liste des salariés actifs enregistrés (fichier Excel .xlsx)"
-              className="flex items-center gap-2 cursor-pointer"
-            >
-              <Download className="w-4 h-4" strokeWidth={1.75} />
-              <span>{exportEnCours ? "Export en cours..." : "Exporter en Excel"}</span>
             </Button>
             <Button
               onClick={handleOpenAddModal}

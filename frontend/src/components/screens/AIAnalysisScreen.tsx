@@ -189,7 +189,7 @@ export default function AIAnalysisScreen() {
                 </div>
               </div>
 
-              <ul className="max-h-[60vh] divide-y divide-[#E8E8ED] overflow-y-auto">
+              <ul className="max-h-[75vh] divide-y divide-[#E8E8ED] overflow-y-auto">
                 {lignesFiltrees.length === 0 && (
                   <li className="p-4 text-center text-xs text-muted-foreground">Aucun collaborateur trouvé.</li>
                 )}
