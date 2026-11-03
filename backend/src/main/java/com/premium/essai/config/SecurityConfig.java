@@ -46,6 +46,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/api/evaluations/*/decision-directe-rh").hasRole("ADMIN_RH")
                         // Gestion des salariés (création, import, suppression, société, démission) : Admin RH uniquement.
                         // La lecture (GET) reste ouverte aux responsables, filtrée sur leur équipe dans le contrôleur.
+                        .requestMatchers(HttpMethod.GET, "/api/salaries/export").hasRole("ADMIN_RH")
                         .requestMatchers(HttpMethod.POST, "/api/salaries/**").hasRole("ADMIN_RH")
                         .requestMatchers(HttpMethod.PUT, "/api/salaries/**").hasRole("ADMIN_RH")
                         .requestMatchers(HttpMethod.PATCH, "/api/salaries/**").hasRole("ADMIN_RH")
@@ -69,6 +70,8 @@ public class SecurityConfig {
         configuration.setAllowedOriginPatterns(origines);
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("Authorization", "Content-Type", "Accept", "Origin"));
+        // Sans cela, le navigateur cache ces en-têtes au JavaScript du front (nom du fichier, nombre de lignes exportées)
+        configuration.setExposedHeaders(List.of("Content-Disposition", "X-Nombre-Salaries"));
         configuration.setAllowCredentials(true);
         configuration.setMaxAge(3600L);
 

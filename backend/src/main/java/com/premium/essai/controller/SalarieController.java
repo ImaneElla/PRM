@@ -1,5 +1,6 @@
 package com.premium.essai.controller;
 
+import com.premium.essai.config.HeureMaroc;
 import com.premium.essai.dto.ImportSalarieResultDTO;
 import com.premium.essai.dto.SalarieRequestDTO;
 import com.premium.essai.dto.SalarieResponseDTO;
@@ -57,6 +58,20 @@ public class SalarieController {
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"modele-import-salaries.xlsx\"")
                 .contentType(MediaType.parseMediaType(TableurExcel.TYPE_XLSX))
                 .body(TableurExcel.modeleSalaries());
+    }
+
+    @GetMapping("/export")
+    @Operation(summary = "Exporter les salariés en Excel (.xlsx)",
+            description = "Données réelles de la base : salariés actifs, ou tous (archivés compris) avec inclureInactifs=true. Réservé à l'Admin RH. L'en-tête X-Nombre-Salaries indique le nombre de lignes exportées.")
+    public ResponseEntity<byte[]> exporterSalaries(@RequestParam(defaultValue = "false") boolean inclureInactifs) {
+        List<SalarieResponseDTO> salaries = new java.util.ArrayList<>(
+                inclureInactifs ? salarieService.getAllSalaries() : salarieService.getAllSalariesActifs());
+        salaries.sort(java.util.Comparator.comparing(SalarieResponseDTO::getMatricule, java.util.Comparator.nullsLast(String::compareTo)));
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"salaries-" + HeureMaroc.aujourdhui() + ".xlsx\"")
+                .header("X-Nombre-Salaries", String.valueOf(salaries.size()))
+                .contentType(MediaType.parseMediaType(TableurExcel.TYPE_XLSX))
+                .body(TableurExcel.exportSalaries(salaries));
     }
 
     @GetMapping

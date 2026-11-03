@@ -1,5 +1,6 @@
 package com.premium.essai.service;
 
+import com.premium.essai.dto.SalarieResponseDTO;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.CellStyle;
 import org.apache.poi.ss.usermodel.CellType;
@@ -107,6 +108,82 @@ public final class TableurExcel {
                 null,
                 new int[]{18, 16, 32, 20, 18, 10, 16, 30, 24, 24, 24, 24, 18, 18, 40, 16, 16},
                 4);
+    }
+
+    private static final List<String> ENTETES_EXPORT_SALARIES = List.of(
+            "Matricule", "Nom", "Prénom", "E-mail", "Poste", "Société", "Date d'embauche",
+            "Fin prévisionnelle", "Responsable", "Direction", "Statut de l'essai", "Actif");
+
+    /* Export : un classeur .xlsx avec une ligne par salarié réellement fourni (jamais d'exemple ni de donnée fictive). */
+    public static byte[] exportSalaries(List<SalarieResponseDTO> salaries) {
+        try (XSSFWorkbook classeur = new XSSFWorkbook(); ByteArrayOutputStream sortie = new ByteArrayOutputStream()) {
+            Sheet feuille = classeur.createSheet("Salariés");
+            CreationHelper aide = classeur.getCreationHelper();
+
+            Font gras = classeur.createFont();
+            gras.setBold(true);
+            CellStyle styleEntete = classeur.createCellStyle();
+            styleEntete.setFont(gras);
+            styleEntete.setFillForegroundColor(IndexedColors.GREY_25_PERCENT.getIndex());
+            styleEntete.setFillPattern(org.apache.poi.ss.usermodel.FillPatternType.SOLID_FOREGROUND);
+
+            // Vraies dates Excel (triables, filtrables), affichées JJ/MM/AAAA
+            CellStyle styleDate = classeur.createCellStyle();
+            styleDate.setDataFormat(aide.createDataFormat().getFormat("dd/mm/yyyy"));
+            // Texte : garde le matricule et les valeurs tels quels
+            CellStyle styleTexte = classeur.createCellStyle();
+            styleTexte.setDataFormat(aide.createDataFormat().getFormat("@"));
+            // Texte « préfixé » : une valeur commençant par = + - @ reste du texte, sans altérer la valeur
+            styleTexte.setQuotePrefixed(true);
+
+            Row entete = feuille.createRow(0);
+            for (int c = 0; c < ENTETES_EXPORT_SALARIES.size(); c++) {
+                Cell cellule = entete.createCell(c);
+                cellule.setCellValue(ENTETES_EXPORT_SALARIES.get(c));
+                cellule.setCellStyle(styleEntete);
+            }
+
+            int numero = 1;
+            for (SalarieResponseDTO s : salaries) {
+                Row ligne = feuille.createRow(numero++);
+                texte(ligne, 0, s.getMatricule(), styleTexte);
+                texte(ligne, 1, s.getLastName(), styleTexte);
+                texte(ligne, 2, s.getFirstName(), styleTexte);
+                texte(ligne, 3, s.getEmail(), styleTexte);
+                texte(ligne, 4, s.getPoste(), styleTexte);
+                texte(ligne, 5, s.getSociete(), styleTexte);
+                date(ligne, 6, s.getDateEmbauche(), styleDate);
+                date(ligne, 7, s.getDateFinPrevisionnelle(), styleDate);
+                texte(ligne, 8, s.getResponsableNomComplet(), styleTexte);
+                texte(ligne, 9, s.getDirectionName(), styleTexte);
+                texte(ligne, 10, s.getStatutEssai(), styleTexte);
+                texte(ligne, 11, s.isActif() ? "Oui" : "Non", styleTexte);
+            }
+
+            int[] largeurs = {14, 20, 18, 34, 24, 10, 16, 18, 26, 22, 18, 8};
+            for (int c = 0; c < largeurs.length; c++) {
+                feuille.setColumnWidth(c, largeurs[c] * 256);
+            }
+            feuille.createFreezePane(0, 1);
+
+            classeur.write(sortie);
+            return sortie.toByteArray();
+        } catch (IOException e) {
+            throw new IllegalStateException("Impossible de générer l'export Excel des salariés", e);
+        }
+    }
+
+    private static void texte(Row ligne, int colonne, String valeur, CellStyle style) {
+        Cell cellule = ligne.createCell(colonne);
+        cellule.setCellStyle(style);
+        if (valeur == null || valeur.isBlank()) return;
+        cellule.setCellValue(valeur);
+    }
+
+    private static void date(Row ligne, int colonne, java.time.LocalDate valeur, CellStyle style) {
+        Cell cellule = ligne.createCell(colonne);
+        cellule.setCellStyle(style);
+        if (valeur != null) cellule.setCellValue(valeur);
     }
 
     public static byte[] modeleResponsables() {

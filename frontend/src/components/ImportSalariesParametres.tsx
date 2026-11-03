@@ -2,7 +2,7 @@
 
 import { useRef, useState } from "react";
 import { useApp } from "../context/AppContext";
-import { telechargerModeleSalaries } from "@/lib/telechargerModele";
+import { exporterSalariesExcel, telechargerModeleSalaries } from "@/lib/telechargerModele";
 import type { ImportSalarieResult } from "../services/salarieService";
 
 const COLONNES = [
@@ -29,6 +29,20 @@ export default function ImportSalariesParametres() {
       showToast(erreur instanceof Error ? erreur.message : "Impossible d'importer le fichier.");
     } finally {
       setEnCours(false);
+    }
+  };
+
+  // Export des salariés réellement enregistrés (différent du modèle, qui ne contient que les en-têtes)
+  const [exportEnCours, setExportEnCours] = useState(false);
+  const exporter = async () => {
+    setExportEnCours(true);
+    try {
+      const nombre = await exporterSalariesExcel();
+      showToast(nombre === 0 ? "Aucun salarié actif à exporter." : `${nombre} salarié${nombre > 1 ? "s exportés" : " exporté"} dans le fichier Excel.`);
+    } catch (erreur) {
+      showToast(erreur instanceof Error ? erreur.message : "Impossible d'exporter les salariés.");
+    } finally {
+      setExportEnCours(false);
     }
   };
 
@@ -62,7 +76,16 @@ export default function ImportSalariesParametres() {
             onClick={() => telechargerModeleSalaries().catch((err) => showToast(err instanceof Error ? err.message : "Impossible de télécharger le modèle."))}
             className="cursor-pointer rounded-xl border border-black/[0.08] px-4 py-2 text-[14px] font-medium text-[#1D1D1F] hover:bg-black/[0.03]"
           >
-            Télécharger le modèle
+            Télécharger le modèle vide
+          </button>
+          <button
+            type="button"
+            disabled={exportEnCours}
+            onClick={exporter}
+            title="Fichier Excel avec les salariés actifs enregistrés dans l'application"
+            className="cursor-pointer rounded-xl border border-black/[0.08] px-4 py-2 text-[14px] font-medium text-[#1D1D1F] hover:bg-black/[0.03] disabled:opacity-60"
+          >
+            {exportEnCours ? "Export en cours..." : "Exporter les salariés (Excel)"}
           </button>
         </div>
 
