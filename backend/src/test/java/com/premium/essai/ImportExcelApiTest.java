@@ -84,8 +84,8 @@ class ImportExcelApiTest {
 
     @Test
     void importExcelDesSalariesParLaVraieRoute() throws Exception {
-        MockMultipartFile fichier = new MockMultipartFile("fichier", "modele-import-salaries.xlsx",
-                TableurExcel.TYPE_XLSX, TableurExcel.modeleSalaries());
+        MockMultipartFile fichier = new MockMultipartFile("fichier", "salaries.csv",
+                "text/csv", "nom;prénom;email;poste;date d'embauche\nAlaoui;Sara;sara.alaoui@exemple.com;Comptable;2026-10-01\n".getBytes(java.nio.charset.StandardCharsets.UTF_8));
 
         mockMvc.perform(multipart("/api/salaries/import").file(fichier).header("Authorization", admin))
                 .andExpect(status().isOk())

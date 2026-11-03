@@ -126,12 +126,84 @@ export default function AIAnalysisModule({ data, onApplyToForm, onSaveAnalysis }
     setTimeout(() => setApplied(false), 3000);
   };
 
-  const handleCopySummary = () => {
+  const handleCopySummary = async () => {
     if (!analysis) return;
-    const summaryText = `--- SYNTHÈSE ANALYSE IA RH ---\nSalarié : ${data.salarieName || 'Collaborateur'} (${data.poste || 'Poste'})\nMoyenne calculée : ${analysis.moyenneGlobale?.toFixed(1) || '-'}/5\n\n1. POINTS FORTS :\n${analysis.pointsForts.map((p, i) => `${i + 1}. ${p}`).join('\n')}\n\n2. AXES D'AMÉLIORATION :\n${analysis.axesAmelioration.map((a, i) => `${i + 1}. ${a}`).join('\n')}\n\n3. SYNTHÈSE TABLEAU :\n${analysis.syntheseTableau?.[0]?.point3_syntheseMoyenne || ''}`;
-    navigator.clipboard.writeText(summaryText);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2500);
+    const esc = (s: string) =>
+      String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    const nom = data.salarieName || 'Collaborateur';
+    const poste = data.poste || 'Poste non renseigné';
+    const moy = analysis.moyenneGlobale?.toFixed(1) || '-';
+    const synthese = analysis.syntheseTableau?.[0]?.point3_syntheseMoyenne || '';
+    const plan = analysis.planAccompagnement || [];
+
+    // Texte brut propre (Notes, Bloc-notes, e-mail texte)
+    const texte = [
+      'ANALYSE IA – ÉVALUATION DE FIN DE PÉRIODE D’ESSAI',
+      `Salarié : ${nom}`,
+      `Poste : ${poste}`,
+      `Moyenne : ${moy} / 5`,
+      '',
+      '1. POINTS FORTS',
+      ...analysis.pointsForts.map((p, i) => `   ${i + 1}. ${p}`),
+      '',
+      '2. AXES D’AMÉLIORATION',
+      ...analysis.axesAmelioration.map((a, i) => `   ${i + 1}. ${a}`),
+      '',
+      '3. SYNTHÈSE',
+      `   ${synthese}`,
+      ...(plan.length
+        ? [
+            '',
+            '4. PLAN D’ACCOMPAGNEMENT',
+            ...plan.map(
+              (a, i) =>
+                `   ${i + 1}. ${a.action}\n      Objectif : ${a.objectif}\n      Échéance : ${a.echeance}\n      Moyens : ${a.moyens}`
+            ),
+          ]
+        : []),
+    ].join('\n');
+
+    // HTML mis en forme (Word, Google Docs, Outlook)
+    const liste = (items: string[]) => `<ol>${items.map((i) => `<li>${esc(i)}</li>`).join('')}</ol>`;
+    const html = `<div style="font-family:Calibri,Arial,sans-serif;font-size:11pt;color:#111">
+<h1 style="font-size:18pt;color:#c8102e">Analyse IA – Évaluation de fin de période d’essai</h1>
+<table style="border-collapse:collapse" cellpadding="6">
+<tr><td><b>Salarié</b></td><td>${esc(nom)}</td></tr>
+<tr><td><b>Poste</b></td><td>${esc(poste)}</td></tr>
+<tr><td><b>Moyenne</b></td><td>${esc(moy)} / 5</td></tr>
+</table>
+<h2 style="font-size:14pt">1. Points forts</h2>${liste(analysis.pointsForts)}
+<h2 style="font-size:14pt">2. Axes d’amélioration</h2>${liste(analysis.axesAmelioration)}
+<h2 style="font-size:14pt">3. Synthèse</h2><p>${esc(synthese)}</p>
+${
+  plan.length
+    ? `<h2 style="font-size:14pt">4. Plan d’accompagnement</h2>
+<table style="border-collapse:collapse;width:100%" border="1" cellpadding="6">
+<tr style="background:#f3f3f3"><th>Action</th><th>Objectif</th><th>Échéance</th><th>Moyens</th></tr>
+${plan
+  .map((a) => `<tr><td>${esc(a.action)}</td><td>${esc(a.objectif)}</td><td>${esc(a.echeance)}</td><td>${esc(a.moyens)}</td></tr>`)
+  .join('')}
+</table>`
+    : ''
+}
+</div>`;
+
+    try {
+      if (typeof ClipboardItem !== 'undefined' && navigator.clipboard?.write) {
+        await navigator.clipboard.write([
+          new ClipboardItem({
+            'text/html': new Blob([html], { type: 'text/html' }),
+            'text/plain': new Blob([texte], { type: 'text/plain' }),
+          }),
+        ]);
+      } else {
+        await navigator.clipboard.writeText(texte);
+      }
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2500);
+    } catch {
+      setErrorMessage("Impossible de copier : autorisez l'accès au presse-papiers dans le navigateur.");
+    }
   };
 
   const criteresEvaluesCount = data.criteres?.filter((c) => !c.note.includes("Non évalué")).length || 0;

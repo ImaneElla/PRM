@@ -622,8 +622,8 @@ export default function DetailSalarieScreen() {
 
             return (
               <div key={p.id} className="space-y-4">
-              <Card className="p-5 space-y-4">
-                <div className="flex items-center justify-between pb-3 border-b border-[#E8E8ED]/70">
+              <Card className="p-5 space-y-4 border-t-4 border-t-[#E4002B]">
+                <div className="flex items-center justify-between pb-3 border-b border-[#D2D2D7]">
                   <div className="flex items-center gap-2.5">
                     <span className="w-8 h-8 rounded-xl bg-primary/10 text-primary flex items-center justify-center font-bold text-xs shadow-2xs">
                       {is3M ? '3M' : '6M'}

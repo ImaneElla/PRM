@@ -6,6 +6,7 @@ import { getAuthUser, updateAuthUser } from '../../services/authService';
 import { modeleEmailService, ModeleEmail } from '../../services/modeleEmailService';
 import { getSocieteLabel, SOCIETES } from '@/lib/societe';
 import OutilViderDonnees from '../OutilViderDonnees';
+import ImportSalariesParametres from '../ImportSalariesParametres';
 
 // Description des champs insérables dans un modèle (remplacés automatiquement à l'envoi)
 const libelleDelai = (delai: number) =>
@@ -147,7 +148,7 @@ export default function ParametresScreen() {
   const [saved, setSaved] = useState(false);
   const [previewId, setPreviewId] = useState<string | null>(null);
 
-  const [activeTab, setActiveTab] = useState<'emails' | 'compte' | 'profil'>('profil');
+  const [activeTab, setActiveTab] = useState<'emails' | 'compte' | 'profil' | 'import'>('profil');
 
   // Charge les modèles d'e-mail réellement utilisés à l'envoi (Admin RH uniquement)
   useEffect(() => {
@@ -322,10 +323,11 @@ export default function ParametresScreen() {
     setTimeout(() => setSaved(false), 2000);
   };
 
-  const tabs: { id: 'profil' | 'emails' | 'compte'; label: string; rhOnly?: boolean }[] = [
+  const tabs: { id: 'profil' | 'emails' | 'compte' | 'import'; label: string; rhOnly?: boolean }[] = [
     { id: 'profil', label: 'Profil' },
     { id: 'emails', label: 'Relances', rhOnly: true },
     { id: 'compte', label: 'Expéditeur', rhOnly: true },
+    { id: 'import', label: 'Import', rhOnly: true },
   ];
   const visibleTabs = tabs.filter((t) => !t.rhOnly || isRH);
   const activeIndex = Math.max(0, visibleTabs.findIndex((t) => t.id === activeTab));
@@ -374,7 +376,9 @@ export default function ParametresScreen() {
         ))}
       </div>
 
-      <form onSubmit={handleSaveAll} className="space-y-7">
+      {isRH && activeTab === 'import' && <ImportSalariesParametres />}
+
+      <form onSubmit={handleSaveAll} className={activeTab === 'import' ? 'hidden' : 'space-y-7'}>
         {isRH && activeTab === 'emails' && (
           <div className="space-y-7">
             <p className="px-4 text-[13px] text-[#6E6E73]">

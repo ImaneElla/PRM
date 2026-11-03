@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Search, Sparkles } from 'lucide-react';
 import AIAnalysisModule from './AIAnalysisModule';
+import ConsulterBouton from '@/components/common/ConsulterBouton';
 import {
   aptitudesPersoItems,
   competencesProItems,
@@ -224,7 +225,18 @@ export default function AIAnalysisScreen() {
             </aside>
 
             {/* Fenêtre de génération de l'analyse IA */}
-            <div className="min-w-0">
+            <div className="min-w-0 space-y-3">
+              {currentPeriode && data && (
+                <div className="flex justify-end">
+                  <ConsulterBouton
+                    key={currentPeriode.id}
+                    periode={currentPeriode}
+                    cible="bilan"
+                    size="default"
+                    label="Consulter le formulaire"
+                  />
+                </div>
+              )}
               {data ? (
                 <AIAnalysisModule
                   key={currentPeriode?.id}

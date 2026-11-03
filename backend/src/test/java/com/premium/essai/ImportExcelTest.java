@@ -106,17 +106,14 @@ class ImportExcelTest {
     }
 
     @Test
-    void lePremierModeleTelechargeableEstReimportable() {
+    void leModeleSalariesNeContientQueLesEntetes() {
         byte[] modele = TableurExcel.modeleSalaries();
+        String texte = TableurExcel.enTexte(modele, "modele-import-salaries.xlsx");
 
-        List<ImportSalarieResultDTO> r = importSalarieService.importer(TableurExcel.enTexte(modele, "modele-import-salaries.xlsx"));
-
-        assertEquals(1, r.size());
-        assertEquals("CREE", r.get(0).getStatut(), r.get(0).getMessage());
-        Salarie s = salarieRepository.findByEmail("sara.alaoui@exemple.com").orElseThrow();
-        assertEquals("Comptable", s.getPoste());
-        assertEquals(LocalDate.of(2026, 10, 1), s.getDateEmbauche());
-        assertEquals("0600000000", s.getPhone());
+        // Aucun salarié fictif dans le modèle : seules les colonnes sont fournies, et elles sont toutes reconnues à l'import
+        assertTrue(texte.startsWith("nom;prénom;email;poste;date d'embauche;"), texte);
+        assertEquals(1, texte.lines().filter(l -> !l.isBlank()).count());
+        assertTrue(importSalarieService.importer(texte).isEmpty());
     }
 
     @Test

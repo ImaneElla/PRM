@@ -41,7 +41,7 @@ export function Etoiles({ note }: { note: number }) {
       {[1, 2, 3, 4, 5].map((i) => (
         <Star
           key={i}
-          className={`h-4 w-4 ${i <= Math.round(note) ? "fill-[#1D1D1F] text-[#1D1D1F]" : "fill-transparent text-[#C7C7CC]"}`}
+          className={`h-5 w-5 ${i <= Math.round(note) ? "fill-[#E4002B] text-[#E4002B] drop-shadow-[0_1px_3px_rgba(228,0,43,0.45)]" : "fill-[#1D1D1F]/5 text-[#8E8E93]"}`}
           strokeWidth={1.5}
         />
       ))}
@@ -51,8 +51,11 @@ export function Etoiles({ note }: { note: number }) {
 
 export function Jauge({ note }: { note: number }) {
   return (
-    <div className="h-1 w-full overflow-hidden rounded-full bg-[#E8E8ED]">
-      <div className="h-full rounded-full bg-[#1D1D1F]" style={{ width: `${Math.max(0, Math.min(100, (note / 5) * 100))}%` }} />
+    <div className="h-2 w-full overflow-hidden rounded-full bg-[#E3E3E8] shadow-inner">
+      <div
+        className="h-full rounded-full bg-linear-to-r from-[#B80022] via-[#E4002B] to-[#FF4D6A] shadow-[0_0_8px_rgba(228,0,43,0.55)] transition-all duration-500"
+        style={{ width: `${Math.max(0, Math.min(100, (note / 5) * 100))}%` }}
+      />
     </div>
   );
 }
@@ -82,7 +85,7 @@ export default function BilanFormulaireCard({ titre, nom, echeance, evaluation, 
           <span className="block text-sm text-[#1D1D1F]">Note globale</span>
           <Etoiles note={noteGlobale ?? 0} />
         </div>
-        <span className="text-3xl font-semibold tracking-tight text-[#1D1D1F]">
+        <span className="text-4xl font-bold tracking-tight text-[#E4002B]">
           {noteGlobale}
           <span className="ml-1 text-base font-normal text-[#86868B]">/ 5</span>
         </span>
@@ -162,8 +165,8 @@ export default function BilanFormulaireCard({ titre, nom, echeance, evaluation, 
   if (embedded) return corps;
 
   return (
-    <section className="rounded-2xl bg-white p-6 shadow-xl">
-      <header className="mb-4 flex items-start justify-between gap-4 border-b border-[#E8E8ED] pb-4">
+    <section className="overflow-hidden rounded-2xl border-t-4 border-[#E4002B] bg-white p-6 shadow-2xl">
+      <header className="mb-4 flex items-start justify-between gap-4 border-b border-[#D2D2D7] pb-4">
         <div>
           <h3 className="text-lg font-semibold text-[#1D1D1F]">{titre}</h3>
           <p className="mt-0.5 text-xs text-[#6E6E73]">

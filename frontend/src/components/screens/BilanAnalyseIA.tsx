@@ -12,6 +12,7 @@ import type { AIAnalysisResult } from './AIAnalysisModule';
 interface BilanAnalyseIAProps {
   periode: PeriodeEvaluation;
   titre: string;
+  labelBouton?: string;
   evaluation?: EvaluationDetail;
 }
 
@@ -19,14 +20,14 @@ const etiquette = 'text-xs text-[#6E6E73]';
 
 // Card « Analyse IA » : même structure que la card du bilan, indépendante, avec son propre bouton « Consulter ».
 // Elle est liée à l'évaluation de ce seul bilan.
-export default function BilanAnalyseIA({ periode, titre, evaluation }: BilanAnalyseIAProps) {
+export default function BilanAnalyseIA({ periode, titre, evaluation, labelBouton }: BilanAnalyseIAProps) {
   const analyse = (evaluation?.donneesAnalyseAI || periode.donneesAnalyseAI) as AIAnalysisResult | undefined;
   const moyenne = typeof analyse?.moyenneGlobale === 'number' ? analyse.moyenneGlobale : null;
   const statut = !evaluation ? 'En attente du bilan' : analyse ? 'Générée' : 'Non générée';
 
   return (
-    <Card className="p-5 space-y-4">
-      <div className="flex items-center justify-between pb-3 border-b border-[#E8E8ED]/70">
+    <Card className="p-5 space-y-4 border-t-4 border-t-[#E4002B]">
+      <div className="flex items-center justify-between pb-3 border-b border-[#D2D2D7]">
         <div className="flex items-center gap-2.5">
           <span className="w-8 h-8 rounded-xl bg-primary/10 text-primary flex items-center justify-center shadow-2xs">
             <Sparkles className="w-4 h-4" strokeWidth={1.75} />
@@ -54,7 +55,7 @@ export default function BilanAnalyseIA({ periode, titre, evaluation }: BilanAnal
               <span className={etiquette}>Statut de l&apos;analyse : </span>
               <span className="font-semibold text-[#1D1D1F]">Non générée</span>
             </div>
-            <ConsulterBouton periode={periode} cible="analyse" size="sm" />
+            <ConsulterBouton periode={periode} cible="analyse" size="sm" label={labelBouton} />
           </div>
         </div>
       ) : (
@@ -64,7 +65,7 @@ export default function BilanAnalyseIA({ periode, titre, evaluation }: BilanAnal
               <span className="block text-sm text-[#1D1D1F]">Moyenne calculée</span>
               <Etoiles note={moyenne ?? 0} />
             </div>
-            <span className="text-3xl font-semibold tracking-tight text-[#1D1D1F]">
+            <span className="text-4xl font-bold tracking-tight text-[#E4002B]">
               {moyenne !== null ? moyenne : '—'}
               <span className="ml-1 text-base font-normal text-[#86868B]">/ 5</span>
             </span>
@@ -91,7 +92,7 @@ export default function BilanAnalyseIA({ periode, titre, evaluation }: BilanAnal
               <span className={etiquette}>Statut de l&apos;analyse : </span>
               <span className={`font-semibold ${analyse ? 'text-[#1F9D55]' : 'text-[#D97706]'}`}>{analyse ? 'Analyse générée' : 'Non générée'}</span>
             </div>
-            <ConsulterBouton periode={periode} cible="analyse" size="sm" />
+            <ConsulterBouton periode={periode} cible="analyse" size="sm" label={labelBouton} />
           </div>
         </div>
       )}

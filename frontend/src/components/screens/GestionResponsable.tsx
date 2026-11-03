@@ -19,14 +19,12 @@ import {
   CheckCircle2,
   Users,
   Upload,
-  Download,
   Send,
   KeyRound
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { getProfileAvatarColor } from '@/lib/profileAvatar';
-import { telechargerModeleResponsables } from '@/lib/telechargerModele';
 import { getSocieteLabel } from '@/lib/societe';
 
 interface FormState {
@@ -254,15 +252,6 @@ export default function GestionResponsable() {
           >
             <Upload className="w-4 h-4" strokeWidth={1.75} />
             <span className="pl-2">{importEnCours ? 'Import en cours...' : 'Importer un fichier Excel'}</span>
-          </Button>
-          <Button
-            variant="ghost"
-            onClick={() => telechargerModeleResponsables().catch((e) => showToast(e instanceof Error ? e.message : "Impossible de télécharger le modèle."))}
-            title="Télécharger un fichier Excel d'exemple avec les bonnes colonnes"
-            className="font-medium cursor-pointer"
-          >
-            <Download className="w-4 h-4" strokeWidth={1.75} />
-            <span className="pl-2">Modèle Excel</span>
           </Button>
           <Button
             onClick={openAddModal}

@@ -46,8 +46,10 @@ public class ImportSalarieService {
             strict("d/M/uu"), strict("d-M-uu"), strict("d.M.uu"));
 
     private static final int NOM = 0, PRENOM = 1, EMAIL = 2, POSTE = 3, DATE = 4, SOCIETE = 5, TELEPHONE = 6,
-            RESPONSABLE = 7, COMPLET = 8, MATRICULE = 9;
-    private static final int NB_COLONNES = 10;
+            RESPONSABLE = 7, COMPLET = 8, MATRICULE = 9,
+            // Suivi de la période d'essai (facultatif) : voir ImportFormulaireService
+            ENVOI1 = 10, FIN1 = 11, ENVOI2 = 12, FIN2 = 13, VALIDATION = 14, DATE_EFFET = 15, AXES = 16, ACC_MANAGER = 17, ACC_RH = 18;
+    private static final int NB_COLONNES = 19;
 
     // En-têtes reconnus (voir cle()) : ce qui est écrit dans la 1re ligne du fichier
     private static final Set<String> ENTETES_NOM = Set.of("nom");
@@ -68,6 +70,8 @@ public class ImportSalarieService {
     private final SalarieRepository salarieRepository;
     private final ResponsableRepository responsableRepository;
     private final Validator validator;
+    private final ImportFormulaireService importFormulaireService;
+    private final NotificationEcheanceService notificationEcheanceService;
 
     // Domaine des adresses générées quand le fichier n'a pas d'e-mail (même convention que l'ajout manuel)
     @Value("${application.import.domaine-email-salaries:premium.africa}")
@@ -146,8 +150,16 @@ public class ImportSalarieService {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Un salarié existe déjà avec l'adresse " + email + ".");
         }
 
+        ImportFormulaireService.DonneesFormulaire formulaire = lireFormulaire(c);
         SalarieResponseDTO cree = salarieService.createSalarie(dto);
+        boolean formulaireImporte = !formulaire.vide();
+        if (formulaireImporte) {
+            importFormulaireService.appliquer(cree.getId(), formulaire);
+            // Les échéances viennent d'être remplacées par celles du fichier : constat de retard silencieux, sans e-mail
+            notificationEcheanceService.detecterRetardsDuSalarie(cree.getId(), false);
+        }
         String message = "Salarié créé (matricule " + cree.getMatricule() + ")."
+                + (formulaireImporte ? " Suivi de la période d'essai importé." : "")
                 + (emailGenere ? " Aucune adresse dans le fichier : " + cree.getEmail() + " a été générée." : "");
         return ImportSalarieResultDTO.builder()
                 .statut("CREE")
@@ -157,6 +169,15 @@ public class ImportSalarieService {
                 .nomComplet(cree.getFirstName() + " " + cree.getLastName())
                 .message(message)
                 .build();
+    }
+
+    private ImportFormulaireService.DonneesFormulaire lireFormulaire(String[] c) {
+        String validation = cle(champ(c, VALIDATION));
+        Boolean valide = validation.isEmpty() ? null : Set.of("oui", "o", "ok", "x", "valide", "validee").contains(validation);
+        return new ImportFormulaireService.DonneesFormulaire(
+                lireDate(champ(c, ENVOI1)), lireDate(champ(c, FIN1)), lireDate(champ(c, ENVOI2)), lireDate(champ(c, FIN2)),
+                valide, lireDate(champ(c, DATE_EFFET)), champ(c, AXES),
+                !cle(champ(c, ACC_MANAGER)).isEmpty(), !cle(champ(c, ACC_RH)).isEmpty());
     }
 
     // Société : colonne du fichier, sinon les 3 lettres du matricule (GRP000059 -> GRP), sinon GRP
@@ -234,7 +255,7 @@ public class ImportSalarieService {
         String[] lignes = contenu.replace("﻿", "").split("\\r?\\n");
         List<LigneCsv> resultat = new ArrayList<>();
         // ordre par défaut sans en-tête : nom, prénom, email, poste, date, société, téléphone, responsable
-        int[] colonnes = {0, 1, 2, 3, 4, 5, 6, 7, -1, -1};
+        int[] colonnes = {0, 1, 2, 3, 4, 5, 6, 7, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1};
         boolean enTeteLue = false;
 
         for (int i = 0; i < lignes.length; i++) {
@@ -273,6 +294,7 @@ public class ImportSalarieService {
     }
 
     private static int typeColonne(String cle) {
+        if (cle.startsWith("presentation")) return COMPLET;
         if (ENTETES_NOM.contains(cle)) return NOM;
         if (ENTETES_PRENOM.contains(cle)) return PRENOM;
         if (NomComplet.synonymesEmail().contains(cle)) return EMAIL;
@@ -283,6 +305,12 @@ public class ImportSalarieService {
         if (ENTETES_SOCIETE.contains(cle)) return SOCIETE;
         if (ENTETES_TELEPHONE.contains(cle)) return TELEPHONE;
         if (ENTETES_RESPONSABLE.contains(cle)) return RESPONSABLE;
+        if (cle.contains("accompagnement")) return cle.contains("rh") && !cle.contains("manager") ? ACC_RH : ACC_MANAGER;
+        if (cle.contains("axes") || cle.contains("amelioration")) return AXES;
+        if (cle.contains("effet")) return DATE_EFFET;
+        if (cle.contains("validation")) return VALIDATION;
+        if (cle.contains("envoi")) return ENVOI1;   // 1re occurrence = période 1, 2e = période 2 (voir positionsEnTete)
+        if (cle.contains("fin") && cle.contains("essai")) return FIN1;
         return -1;
     }
 
@@ -291,7 +319,13 @@ public class ImportSalarieService {
         Arrays.fill(colonnes, -1);
         for (int i = 0; i < entete.length; i++) {
             int type = typeColonne(cle(entete[i]));
-            if (type >= 0 && colonnes[type] < 0) colonnes[type] = i;
+            if (type == ENVOI1 || type == FIN1) {
+                // Colonnes répétées (période 1 puis période 2) : la 2e occurrence prend le rang suivant
+                if (colonnes[type] < 0) colonnes[type] = i;
+                else if (colonnes[type + 2] < 0) colonnes[type + 2] = i;
+            } else if (type >= 0 && colonnes[type] < 0) {
+                colonnes[type] = i;
+            }
         }
         boolean nomEtPrenom = colonnes[NOM] >= 0 && colonnes[PRENOM] >= 0;
         if ((!nomEtPrenom && colonnes[COMPLET] < 0) || colonnes[POSTE] < 0 || colonnes[DATE] < 0) {

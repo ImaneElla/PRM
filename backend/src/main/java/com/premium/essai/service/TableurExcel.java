@@ -100,9 +100,12 @@ public final class TableurExcel {
 
     public static byte[] modeleSalaries() {
         return modele("Salariés",
-                List.of("nom", "prénom", "email", "poste", "date d'embauche", "société", "téléphone", "responsable (e-mail)"),
-                List.of("Alaoui", "Sara", "sara.alaoui@exemple.com", "Comptable", "2026-10-01", "GRP", "0600000000", ""),
-                new int[]{18, 16, 32, 20, 18, 10, 16, 30},
+                List.of("nom", "prénom", "email", "poste", "date d'embauche", "société", "téléphone", "responsable (e-mail)",
+                        "date d'envoi fiche d'évaluation (période 1)", "date de fin de période d'essai (période 1)",
+                        "date d'envoi fiche d'évaluation (période 2)", "date de fin de période d'essai (période 2)",
+                        "validation période d'essai", "date d'effet validation", "axes d'amélioration", "accompagnement manager", "accompagnement RH"),
+                null,
+                new int[]{18, 16, 32, 20, 18, 10, 16, 30, 24, 24, 24, 24, 18, 18, 40, 16, 16},
                 4);
     }
 
@@ -130,14 +133,16 @@ public final class TableurExcel {
             styleTexte.setDataFormat(aide.createDataFormat().getFormat("@")); // texte : garde le 0 de « 06… »
 
             Row ligneEntete = feuille.createRow(0);
-            Row ligneExemple = feuille.createRow(1);
+            Row ligneExemple = exemple == null ? null : feuille.createRow(1);
             for (int c = 0; c < entetes.size(); c++) {
                 Cell entete = ligneEntete.createCell(c);
                 entete.setCellValue(entetes.get(c));
                 entete.setCellStyle(styleEntete);
-                Cell valeur = ligneExemple.createCell(c);
-                valeur.setCellStyle(styleTexte);
-                valeur.setCellValue(exemple.get(c));
+                if (ligneExemple != null) {
+                    Cell valeur = ligneExemple.createCell(c);
+                    valeur.setCellStyle(styleTexte);
+                    valeur.setCellValue(exemple.get(c));
+                }
                 feuille.setColumnWidth(c, largeurs[c] * 256);
             }
             feuille.createFreezePane(0, 1);
@@ -146,9 +151,9 @@ public final class TableurExcel {
             String[] lignes = colonneDate >= 0
                     ? new String[]{
                         "Remplissez la feuille « Salariés », une ligne par salarié, puis importez le fichier dans l'application.",
-                        "Remplacez ou supprimez la ligne d'exemple (ligne 2).",
                         "Colonnes obligatoires : nom, prénom, email, poste, date d'embauche.",
                         "Facultatives : société (GRP, PRO, SRM, AFI, CCI ou SCP ; GRP par défaut), téléphone, responsable (son e-mail, ou son nom complet ; il doit déjà exister dans « Gestion des responsables »).",
+                        "Suivi (facultatif, pour reprendre un historique) : dates d'envoi/fin des périodes 1 et 2, validation (OUI), date d'effet, axes d'amélioration, accompagnement manager / RH (une croix suffit). Aucun e-mail n'est envoyé pour ces données.",
                         "Date d'embauche : une vraie date Excel, ou au format AAAA-MM-JJ / JJ/MM/AAAA.",
                         "Téléphone : formatez la colonne en « Texte » pour conserver le 0 initial.",
                         "Maximum 500 lignes par fichier ; une ligne en erreur n'empêche pas l'import des autres."}

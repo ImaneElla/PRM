@@ -276,6 +276,7 @@ export default function ArchivesScreen() {
                             periode={periode}
                             salarieNom={periode.salarieNom}
                             size="default"
+                            cible="les-deux"
                           />
                           {isRH && salarieArchive && (
                             <Button
@@ -324,6 +325,7 @@ export default function ArchivesScreen() {
                             salarieId={s.id}
                             salarieNom={`${s.firstName} ${s.lastName}`}
                             size="default"
+                            cible="les-deux"
                           />
                           {isRH && s.actif === false && (
                             <Button

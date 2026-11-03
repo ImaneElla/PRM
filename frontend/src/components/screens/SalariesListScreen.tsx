@@ -3,10 +3,8 @@
 import React, { useState, useMemo, useRef } from "react";
 import { useApp } from "../../context/AppContext";
 import type { ImportSalarieResult } from "../../services/salarieService";
-import { telechargerModeleSalaries } from "@/lib/telechargerModele";
 import {
   Search,
-  Download,
   Upload,
   UserPlus,
   Clock,
@@ -270,15 +268,6 @@ export default function SalariesListScreen() {
             >
               <Upload className="w-4 h-4" strokeWidth={1.75} />
               <span>{importEnCours ? "Import en cours..." : "Importer un fichier Excel"}</span>
-            </Button>
-            <Button
-              variant="ghost"
-              onClick={() => telechargerModeleSalaries().catch((e) => showToast(e instanceof Error ? e.message : "Impossible de télécharger le modèle."))}
-              title="Télécharger un fichier Excel d'exemple avec les bonnes colonnes"
-              className="flex items-center gap-2 cursor-pointer"
-            >
-              <Download className="w-4 h-4" strokeWidth={1.75} />
-              <span>Modèle Excel</span>
             </Button>
             <Button
               onClick={handleOpenAddModal}

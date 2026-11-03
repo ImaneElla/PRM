@@ -119,7 +119,7 @@ function CriteriaTable({
 // Main screen
 // ============================================================================
 
-export default function FormulaireEvaluationScreen() {
+export default function FormulaireEvaluationScreen({ periodeId, onClose }: { periodeId?: number; onClose?: () => void } = {}) {
   const app = useApp();
   const {
     selectedPeriodeId,
@@ -132,13 +132,16 @@ export default function FormulaireEvaluationScreen() {
   } = app;
 
   const { evaluations } = app;
+  // Ouvert dans une fenêtre (onClose) : on la ferme au lieu de changer de section
+  const quitter = () => (onClose ? onClose() : navigateTo('periodes'));
 
   const periode =
+    (periodeId ? [...periodes, ...(app.allPeriodes ?? [])].find((p) => p.id === periodeId) : undefined) ||
     periodes.find((p) => p.id === selectedPeriodeId) ||
     periodes.find((p) => p.statut !== 'VALIDEE_RH') ||
     periodes[0];
 
-  const salarie = salaries.find((s) => s.id === periode?.salarieId) || salaries[0];
+  const salarie = [...salaries, ...(app.allSalaries ?? [])].find((s) => s.id === periode?.salarieId) || salaries[0];
   const isP1 = periode?.typePeriode === 'TROIS_MOIS' || periode?.typePeriode === 'DEUX_MOIS' || periode?.numeroPeriode === 1;
   const isP2 = periode?.typePeriode === 'SIX_MOIS' || periode?.typePeriode === 'CINQ_MOIS' || periode?.numeroPeriode === 2;
 
@@ -435,7 +438,7 @@ export default function FormulaireEvaluationScreen() {
             <Button
               onClick={() => {
                 setSoumissionReussie(false);
-                navigateTo('periodes');
+                quitter();
               }}
               className="bg-linear-to-br from-[#EE1B3C] to-[#D1002A] border border-[#D1002A] text-white shadow-[0_1px_2px_rgba(209,0,42,0.3),0_6px_16px_-6px_rgba(209,0,42,0.5),inset_0_1px_0_rgba(255,255,255,0.2)] hover:brightness-110 flex items-center gap-2 cursor-pointer"
             >
@@ -454,7 +457,7 @@ export default function FormulaireEvaluationScreen() {
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => navigateTo('periodes')}
+              onClick={quitter}
               className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1.5 cursor-pointer"
             >
               <ArrowLeft className="w-4 h-4" />
