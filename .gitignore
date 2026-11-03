@@ -11,3 +11,6 @@ dist/
 .env.*
 !.env.example
 *.log
+
+# Documentation personnelle
+docs/
